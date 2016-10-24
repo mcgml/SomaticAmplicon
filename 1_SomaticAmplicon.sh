@@ -162,6 +162,10 @@ TMP_DIR=/state/partition1/tmpdir
 -R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 -T /data/diagnostics/pipelines/SomaticAmplicon/SomaticAmplicon-"$version"/"$panel"/"$panel"_ROI_b37.bed
 
+#sort and index BAM
+/share/apps/samtools-distros/samtools-1.3.1/samtools sort -m4G "$seqId"_"$sampleId"_amplicon_realigned.bam "$seqId"_"$sampleId"_amplicon_realigned_sorted
+/share/apps/samtools-distros/samtools-1.3.1/samtools index "$seqId"_"$sampleId"_amplicon_realigned_sorted.bam
+
 #Identify regions requiring realignment
 /share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx24g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
 -T RealignerTargetCreator \
@@ -169,7 +173,7 @@ TMP_DIR=/state/partition1/tmpdir
 -known /state/partition1/db/human/gatk/2.8/b37/1000G_phase1.indels.b37.vcf \
 -known /state/partition1/db/human/gatk/2.8/b37/Mills_and_1000G_gold_standard.indels.b37.vcf \
 -known /data/db/human/cosmic/b37/Cosmic69Indels.vcf \
--I "$seqId"_"$sampleId"_amplicon_realigned.bam \
+-I "$seqId"_"$sampleId"_amplicon_realigned_sorted.bam \
 -o "$seqId"_"$sampleId"_indel_realigned.intervals \
 -L /data/diagnostics/pipelines/SomaticAmplicon/SomaticAmplicon-"$version"/"$panel"/"$panel"_ROI_b37.bed \
 -ip "$padding" \
@@ -189,7 +193,7 @@ TMP_DIR=/state/partition1/tmpdir
 --maxReadsForConsensuses 600 \
 --maxReadsInMemory 250000 \
 -LOD 0.4 \
--I "$seqId"_"$sampleId"_amplicon_realigned.bam \
+-I "$seqId"_"$sampleId"_amplicon_realigned_sorted.bam \
 -o "$seqId"_"$sampleId"_indel_realigned.bam \
 -dt NONE
 
@@ -203,6 +207,8 @@ TMP_DIR=/state/partition1/tmpdir
 /share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx8g -jar /share/apps/picard-tools-distros/picard-tools-2.5.0/picard.jar SetNmAndUqTags \
 I="$seqId"_"$sampleId"_clipped.bam \
 O="$seqId"_"$sampleId".bam \
+SO=coordinate \
+CREATE_INDEX=true \
 R=/state/partition1/db/human/mappers/b37/bwa/human_g1k_v37.fasta
 
 ### QC ###
