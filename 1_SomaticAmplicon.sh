@@ -191,12 +191,14 @@ TMP_DIR=/state/partition1/tmpdir
 #soft clip PCR primers
 /share/apps/jre-distros/jre1.8.0_101/bin/java -Xmx2g -jar /data/diagnostics/apps/SoftClipPCRPrimer/SoftClipPCRPrimer-1.0.0.jar \
 -I "$seqId"_"$sampleId"_indel_realigned.bam \
--O "$seqId"_"$sampleId".bam \
+-O "$seqId"_"$sampleId"_clipped.bam \
 -T /data/diagnostics/pipelines/SomaticAmplicon/SomaticAmplicon-"$version"/"$panel"/"$panel"_ROI_b37.bed
 
-### Variant calling ###
-
-#SNPs and Indels with Illumina Pisces
+#fix bam tags
+/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx8g -jar /share/apps/picard-tools-distros/picard-tools-2.5.0/picard.jar SetNmAndUqTags \
+I="$seqId"_"$sampleId"_clipped.bam \
+O="$seqId"_"$sampleId".bam \
+R=/state/partition1/db/human/mappers/b37/bwa/human_g1k_v37.fasta
 
 ### QC ###
 
