@@ -65,17 +65,22 @@ for fastqPair in $(ls "$sampleId"_S*.fastq.gz | cut -d_ -f1-3 | sort | uniq); do
     /share/apps/cutadapt-distros/cutadapt-1.9.1/bin/cutadapt \
     -a "$read1Adapter" \
     -A "$read2Adapter" \
-    -m 30 \
+    -m 50 \
     -o "$seqId"_"$sampleId"_"$laneId"_R1.fastq \
     -p "$seqId"_"$sampleId"_"$laneId"_R2.fastq \
     "$read1Fastq" \
     "$read2Fastq"
 
     #merge overlapping reads
+    /share/apps/pear-distros/pear-0.9.10-bin-64/pear-0.9.10-bin-64 \
+    -f "$seqId"_"$sampleId"_"$laneId"_R1.fastq \
+    -r "$seqId"_"$sampleId"_"$laneId"_R2.fastq \
+    -o "$seqId"_"$sampleId"_"$laneId"_merged.fastq \
+    -j 12
 
     #convert fastq to ubam
     /share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx8g -jar /share/apps/picard-tools-distros/picard-tools-2.5.0/picard.jar FastqToSam \
-    F1="$seqId"_"$sampleId"_"$laneId"_R1_merged.fastq \
+    F1="$seqId"_"$sampleId"_"$laneId"_merged.fastq \
     O="$seqId"_"$sampleId"_"$laneId"_unaligned.bam \
     QUALITY_FORMAT=Standard \
     READ_GROUP_NAME="$seqId"_"$laneId"_"$sampleId" \
@@ -100,7 +105,7 @@ for fastqPair in $(ls "$sampleId"_S*.fastq.gz | cut -d_ -f1-3 | sort | uniq); do
     fi
 
     #clean up
-    rm "$seqId"_"$sampleId"_"$laneId"_R1.fastq "$seqId"_"$sampleId"_"$laneId"_R2.fastq
+    rm "$seqId"_"$sampleId"_"$laneId"_R1.fastq "$seqId"_"$sampleId"_"$laneId"_R2.fastq "$seqId"_"$sampleId"_"$laneId"_merged.fastq
 
 done
 
@@ -151,6 +156,11 @@ CREATE_INDEX=true \
 TMP_DIR=/state/partition1/tmpdir
 
 #Realign soft clipped bases
+/share/apps/jre-distros/jre1.8.0_101/bin/java -Xmx2g -jar /data/diagnostics/apps/AmpliconRealigner/AmpliconRealigner-1.0.0.jar \
+-I "$seqId"_"$sampleId"_aligned.bam \
+-O "$seqId"_"$sampleId"_amplicon_realigned.bam \
+-R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
+-T /data/diagnostics/pipelines/SomaticAmplicon/SomaticAmplicon-"$version"/"$panel"/"$panel"_ROI_b37.bed
 
 #Identify regions requiring realignment
 /share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx24g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
@@ -158,9 +168,10 @@ TMP_DIR=/state/partition1/tmpdir
 -R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 -known /state/partition1/db/human/gatk/2.8/b37/1000G_phase1.indels.b37.vcf \
 -known /state/partition1/db/human/gatk/2.8/b37/Mills_and_1000G_gold_standard.indels.b37.vcf \
--I "$seqId"_"$sampleId"_rmdup.bam \
--o "$seqId"_"$sampleId"_realign.intervals \
--L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
+-known /data/db/human/cosmic/b37/Cosmic69Indels.vcf \
+-I "$seqId"_"$sampleId"_amplicon_realigned.bam \
+-o "$seqId"_"$sampleId"_indel_realigned.intervals \
+-L /data/diagnostics/pipelines/SomaticAmplicon/SomaticAmplicon-"$version"/"$panel"/"$panel"_ROI_b37.bed \
 -ip "$padding" \
 -nt 12 \
 -dt NONE
@@ -171,12 +182,17 @@ TMP_DIR=/state/partition1/tmpdir
 -R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 -known /state/partition1/db/human/gatk/2.8/b37/1000G_phase1.indels.b37.vcf \
 -known /state/partition1/db/human/gatk/2.8/b37/Mills_and_1000G_gold_standard.indels.b37.vcf \
--targetIntervals "$seqId"_"$sampleId"_realign.intervals \
--I "$seqId"_"$sampleId"_rmdup.bam \
--o "$seqId"_"$sampleId"_realigned.bam \
+-known /data/db/human/cosmic/b37/Cosmic69Indels.vcf \
+-targetIntervals "$seqId"_"$sampleId"_indel_realigned.intervals \
+-I "$seqId"_"$sampleId"_amplicon_realigned.bam \
+-o "$seqId"_"$sampleId"_indel_realigned.bam \
 -dt NONE
 
 #soft clip PCR primers
+/share/apps/jre-distros/jre1.8.0_101/bin/java -Xmx2g -jar /data/diagnostics/apps/SoftClipPCRPrimer/SoftClipPCRPrimer-1.0.0.jar \
+-I "$seqId"_"$sampleId"_indel_realigned.bam \
+-O "$seqId"_"$sampleId".bam \
+-T /data/diagnostics/pipelines/SomaticAmplicon/SomaticAmplicon-"$version"/"$panel"/"$panel"_ROI_b37.bed
 
 ### Variant calling ###
 
@@ -186,7 +202,7 @@ TMP_DIR=/state/partition1/tmpdir
 
 #Convert BED to interval_list for later
 /share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx8g -jar /share/apps/picard-tools-distros/picard-tools-2.5.0/picard.jar BedToIntervalList \
-I=/data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
+I=/data/diagnostics/pipelines/SomaticAmplicon/SomaticAmplicon-"$version"/"$panel"/"$panel"_ROI_b37.bed \
 O="$panel"_ROI.interval_list \
 SD=/state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.dict 
 
@@ -210,7 +226,7 @@ TARGET_INTERVALS="$panel"_ROI.interval_list
 -R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 -o "$seqId"_"$sampleId"_DepthOfCoverage \
 -I "$seqId"_"$sampleId".bam \
--L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
+-L /data/diagnostics/pipelines/SomaticAmplicon/SomaticAmplicon-"$version"/"$panel"/"$panel"_ROI_b37.bed \
 --countType COUNT_FRAGMENTS \
 --minMappingQuality 20 \
 --minBaseQuality 10 \
@@ -222,7 +238,7 @@ TARGET_INTERVALS="$panel"_ROI.interval_list
 #Calculate gene percentage coverage
 /share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx8g -jar /data/diagnostics/apps/CoverageCalculator-2.0.0/CoverageCalculator-2.0.0.jar \
 "$seqId"_"$sampleId"_DepthOfCoverage \
-/data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_genes.txt \
+/data/diagnostics/pipelines/SomaticAmplicon/SomaticAmplicon-"$version"/"$panel"/"$panel"_genes.txt \
 /state/partition1/db/human/refseq/ref_GRCh37.p13_top_level.gff3 \
 -p5 \
 -d"$minimumCoverage" \
@@ -254,5 +270,5 @@ find $PWD -name "$seqId"_"$sampleId".bam >> ../FinalBams.list
 #check if all VCFs are written
 if [ $(find .. -maxdepth 1 -mindepth 1 -type d | wc -l | sed 's/^[[:space:]]*//g') -eq $(sort ../GVCFs.list | uniq | wc -l | sed 's/^[[:space:]]*//g') ]; then
     echo -e "seqId=$seqId\npanel=$panel" > ../variables
-    cp 2_GermlineEnrichment.sh .. && cd .. && qsub 2_GermlineEnrichment.sh
+    cp 2_SomaticAmplicon.sh .. && cd .. && qsub 2_SomaticAmplicon.sh
 fi
