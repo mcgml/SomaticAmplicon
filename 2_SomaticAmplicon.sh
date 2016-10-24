@@ -59,9 +59,14 @@ mono /share/apps/pisces-distros/5.1.3.60/Pisces.exe \
 -g /data/db/human/gatk/2.8/b37 \
 -i /data/diagnostics/pipelines/SomaticAmplicon/SomaticAmplicon-"$version"/"$panel"/"$panel"_ROI_b37.bed \
 -f 0.01 \
--c 30 \
+-fo false \
+-b 20 \
+-q 100 \
+-c 20 \
+-a 20 \
+-F 20 \
 -m 20 \
--gVCF False
+-gVCF false
 
 #Annotate with low complexity region length using mdust
 /share/apps/bcftools-distros/bcftools-1.3.1/bcftools annotate \
