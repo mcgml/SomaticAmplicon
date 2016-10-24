@@ -203,11 +203,14 @@ TMP_DIR=/state/partition1/tmpdir
 -O "$seqId"_"$sampleId"_clipped.bam \
 -T /data/diagnostics/pipelines/SomaticAmplicon/SomaticAmplicon-"$version"/"$panel"/"$panel"_ROI_b37.bed
 
+#sort and index BAM
+/share/apps/samtools-distros/samtools-1.3.1/samtools sort -m4G -o "$seqId"_"$sampleId"_clipped_sorted.bam "$seqId"_"$sampleId"_clipped.bam
+/share/apps/samtools-distros/samtools-1.3.1/samtools index "$seqId"_"$sampleId"_clipped_sorted.bam
+
 #fix bam tags
 /share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx8g -jar /share/apps/picard-tools-distros/picard-tools-2.5.0/picard.jar SetNmAndUqTags \
-I="$seqId"_"$sampleId"_clipped.bam \
+I="$seqId"_"$sampleId"_clipped_sorted.bam \
 O="$seqId"_"$sampleId".bam \
-SO=coordinate \
 CREATE_INDEX=true \
 R=/state/partition1/db/human/mappers/b37/bwa/human_g1k_v37.fasta
 
