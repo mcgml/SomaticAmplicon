@@ -177,13 +177,18 @@ TMP_DIR=/state/partition1/tmpdir
 -dt NONE
 
 #Realign around indels
-/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx4g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
+/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx12g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
 -T IndelRealigner \
 -R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 -known /state/partition1/db/human/gatk/2.8/b37/1000G_phase1.indels.b37.vcf \
 -known /state/partition1/db/human/gatk/2.8/b37/Mills_and_1000G_gold_standard.indels.b37.vcf \
 -known /data/db/human/cosmic/b37/Cosmic69Indels.vcf \
 -targetIntervals "$seqId"_"$sampleId"_indel_realigned.intervals \
+--maxReadsForRealignment 100000 \
+--maxConsensuses 150 \
+--maxReadsForConsensuses 600 \
+--maxReadsInMemory 250000 \
+-LOD 0.4 \
 -I "$seqId"_"$sampleId"_amplicon_realigned.bam \
 -o "$seqId"_"$sampleId"_indel_realigned.bam \
 -dt NONE
@@ -231,7 +236,7 @@ TARGET_INTERVALS="$panel"_ROI.interval_list
 -L /data/diagnostics/pipelines/SomaticAmplicon/SomaticAmplicon-"$version"/"$panel"/"$panel"_ROI_b37.bed \
 --countType COUNT_FRAGMENTS \
 --minMappingQuality 20 \
---minBaseQuality 10 \
+--minBaseQuality 20 \
 --omitIntervalStatistics \
 -ct "$minimumCoverage" \
 -nt 12 \
