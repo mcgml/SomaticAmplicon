@@ -163,7 +163,7 @@ TMP_DIR=/state/partition1/tmpdir
 -T /data/diagnostics/pipelines/SomaticAmplicon/SomaticAmplicon-"$version"/"$panel"/"$panel"_ROI_b37.bed
 
 #sort and index BAM
-/share/apps/samtools-distros/samtools-1.3.1/samtools sort -m4G "$seqId"_"$sampleId"_amplicon_realigned.bam "$seqId"_"$sampleId"_amplicon_realigned_sorted
+/share/apps/samtools-distros/samtools-1.3.1/samtools sort -m4G -o "$seqId"_"$sampleId"_amplicon_realigned_sorted.bam "$seqId"_"$sampleId"_amplicon_realigned.bam
 /share/apps/samtools-distros/samtools-1.3.1/samtools index "$seqId"_"$sampleId"_amplicon_realigned_sorted.bam
 
 #Identify regions requiring realignment
