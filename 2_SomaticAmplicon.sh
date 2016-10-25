@@ -26,8 +26,6 @@ version="dev"
 #
 # Script 2 runs in panel folder, requires final bams
 
-#TODO filter variants
-
 phoneTrello() {
     #Call trello API
     /share/apps/node-distros/node-v4.4.7-linux-x64/bin/node \
@@ -68,6 +66,9 @@ mono /share/apps/pisces-distros/5.1.3.60/Pisces.exe \
 -m 20 \
 -gVCF false
 
+#rename Pisces VCF file
+#TODO
+
 #Annotate with low complexity region length using mdust
 /share/apps/bcftools-distros/bcftools-1.3.1/bcftools annotate \
 -a /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.mdust.v34.lpad1.bed.gz \
@@ -75,6 +76,19 @@ mono /share/apps/pisces-distros/5.1.3.60/Pisces.exe \
 -h <(echo '##INFO=<ID=LCRLen,Number=1,Type=Integer,Description="Overlapping mdust low complexity region length (mask cutoff: 34)">') \
 -o "$seqId"_variants.lcr.vcf \
 "$seqId"_variants.vcf
+
+#Filter variants near to homopolymers
+/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx4g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
+-T VariantFiltration \
+-R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
+-V "$seqId"_variants.lcr.vcf \
+--filterExpression "LCRLen > 8" \
+--filterName "LowComplexity" 
+--genotypeFilterExpression "DP < 20" \
+--genotypeFilterName "LowDP" \
+-L /data/diagnostics/pipelines/SomaticAmplicon/SomaticAmplicon-"$version"/"$panel"/"$panel"_ROI_b37.bed \
+-o "$seqId"_filtered.vcf \
+-dt NONE
 
 #Add VCF meta data to final VCF
 addMetaDataToVCF "$seqId"_filtered.vcf
@@ -89,6 +103,7 @@ addMetaDataToVCF "$seqId"_filtered.vcf
 --eval:"$seqId" "$seqId"_filtered_meta.vcf \
 --comp:omni2.5 /state/partition1/db/human/gatk/2.8/b37/1000G_omni2.5.b37.vcf \
 --comp:hapmap3.3 /state/partition1/db/human/gatk/2.8/b37/hapmap_3.3.b37.vcf \
+--comp:cosmic78 /state/partition1/db/human/gatk/2.8/b37/cosmic_78.b37.vcf \
 -ST JexlExpression --select_names "snp" --select_exps "vc.isSNP()" \
 -ST JexlExpression --select_names "indel" --select_exps "vc.isIndel()" \
 -L /data/diagnostics/pipelines/SomaticAmplicon/SomaticAmplicon-"$version"/"$panel"/"$panel"_ROI_b37.bed \
@@ -103,6 +118,7 @@ addMetaDataToVCF "$seqId"_filtered.vcf
 --eval:"$seqId" "$seqId"_filtered_meta.vcf \
 --comp:omni2.5 /state/partition1/db/human/gatk/2.8/b37/1000G_omni2.5.b37.vcf \
 --comp:hapmap3.3 /state/partition1/db/human/gatk/2.8/b37/hapmap_3.3.b37.vcf \
+--comp:cosmic78 /state/partition1/db/human/gatk/2.8/b37/cosmic_78.b37.vcf \
 -ST JexlExpression --select_names "snp" --select_exps "vc.isSNP()" \
 -ST JexlExpression --select_names "indel" --select_exps "vc.isIndel()" \
 -L /data/diagnostics/pipelines/SomaticAmplicon/SomaticAmplicon-"$version"/"$panel"/"$panel"_ROI_b37.bed \
@@ -110,6 +126,9 @@ addMetaDataToVCF "$seqId"_filtered.vcf
 -dt NONE
 
 ### Clean up ###
+
+#delete unused files
+rm "$seqId"_variants.lcr.vcf "$seqId"_variants.lcr.vcf.idx "$seqId"_filtered.vcf "$seqId"_filtered.vcf.idx
 
 #log with Trello
 phoneTrello "$seqId" "Analysis complete"

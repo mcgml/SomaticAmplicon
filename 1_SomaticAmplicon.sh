@@ -26,6 +26,11 @@ version="dev"
 #
 # Script 1 runs in sample folder, requires fastq files split by lane
 
+#TODO update cosmic
+#TODO calculate % coverage and gaps over targets
+#TODO validate with TruSight Myeloid, tumour 15 x 2, cosmic indels, wet lab runs x 3
+#TODO LOD with horizon controls (wet lab)
+
 phoneTrello() {
     #Call trello API
     /share/apps/node-distros/node-v4.4.7-linux-x64/bin/node \
@@ -282,9 +287,12 @@ echo \#\#SAMPLE\=\<ID\="$sampleId",WorklistId\="$worklistId",SeqId\="$seqId",Pan
 find $PWD -name "$seqId"_"$sampleId".bam >> ../FinalBams.list
 
 #delete unused files
+rm "$seqId"_"$sampleId"_*unaligned.bam "$seqId"_"$sampleId"_aligned.bam "$seqId"_"$sampleId"_aligned.bai "$seqId"_"$sampleId"_amplicon_realigned.bam
+rm "$seqId"_"$sampleId"_amplicon_realigned_sorted.bam "$seqId"_"$sampleId"_amplicon_realigned_sorted.bam.bai "$seqId"_"$sampleId"_indel_realigned.intervals
+rm "$seqId"_"$sampleId"_clipped.bam "$seqId"_"$sampleId"_clipped_sorted.bam "$seqId"_"$sampleId"_clipped_sorted.bam.bai "$panel"_ROI.interval_list 
 
-#check if all VCFs are written
-if [ $(find .. -maxdepth 1 -mindepth 1 -type d | wc -l | sed 's/^[[:space:]]*//g') -eq $(sort ../GVCFs.list | uniq | wc -l | sed 's/^[[:space:]]*//g') ]; then
+#check if all BAMs are written
+if [ $(find .. -maxdepth 1 -mindepth 1 -type d | wc -l | sed 's/^[[:space:]]*//g') -eq $(sort ../FinalBams.list | uniq | wc -l | sed 's/^[[:space:]]*//g') ]; then
     echo -e "seqId=$seqId\npanel=$panel" > ../variables
     cp 2_SomaticAmplicon.sh .. && cd .. && qsub 2_SomaticAmplicon.sh
 fi
