@@ -226,13 +226,7 @@ R=/state/partition1/db/human/mappers/b37/bwa/human_g1k_v37.fasta
 /share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx8g -jar /share/apps/picard-tools-distros/picard-tools-2.7.1/picard.jar BedToIntervalList \
 I=/data/diagnostics/pipelines/SomaticAmplicon/SomaticAmplicon-"$version"/"$panel"/"$panel"_ROI_b37.bed \
 O="$panel"_ROI.interval_list \
-SD=/state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.dict 
-
-#Calculate insert size
-/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx8g -jar /share/apps/picard-tools-distros/picard-tools-2.7.1/picard.jar CollectInsertSizeMetrics \
-I="$seqId"_"$sampleId".bam \
-O="$seqId"_"$sampleId"_insert_metrics.txt \
-H="$seqId"_"$sampleId"_insert_metrics.pdf
+SD=/state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.dict
 
 #HsMetrics: capture & pooling performance
 /share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx8g -jar /share/apps/picard-tools-distros/picard-tools-2.7.1/picard.jar CollectHsMetrics \
@@ -267,8 +261,6 @@ TARGET_INTERVALS="$panel"_ROI.interval_list
 > "$seqId"_"$sampleId"_PercentageCoverage.txt
 
 #Gather QC metrics
-meanInsertSize=$(head -n8 "$seqId"_"$sampleId"_insert_metrics.txt | tail -n1 | cut -s -f5) #mean insert size
-sdInsertSize=$(head -n8 "$seqId"_"$sampleId"_insert_metrics.txt | tail -n1 | cut -s -f6) #insert size standard deviation
 totalReads=$(head -n8 "$seqId"_"$sampleId"_hs_metrics.txt | tail -n1 | cut -s -f6) #The total number of reads in the SAM or BAM file examine.
 pctSelectedBases=$(head -n8 "$seqId"_"$sampleId"_hs_metrics.txt | tail -n1 | cut -s -f19) #On+Near Bait Bases / PF Bases Aligned.
 totalTargetedUsableBases=$(head -n2 $seqId"_"$sampleId"_DepthOfCoverage".sample_summary | tail -n1 | cut -s -f2) #total number of usable bases. NB BQSR requires >= 100M, ideally >= 1B
@@ -276,8 +268,8 @@ meanOnTargetCoverage=$(head -n2 $seqId"_"$sampleId"_DepthOfCoverage".sample_summ
 pctTargetBasesCt=$(head -n2 $seqId"_"$sampleId"_DepthOfCoverage".sample_summary | tail -n1 | cut -s -f7) #percentage panel covered with good enough data for variant detection
 
 #Print QC metricss
-echo -e "TotalReads\tRawSequenceQuality\tTotalTargetUsableBases\tPctSelectedBases\tpctTargetBasesCt\tMeanOnTargetCoverage\tMeanInsertSize\tSDInsertSize" > "$seqId"_"$sampleId"_qc.txt
-echo -e "$totalReads\t$rawSequenceQuality\t$totalTargetedUsableBases\t$pctSelectedBases\t$pctTargetBasesCt\t$meanOnTargetCoverage\t$meanInsertSize\t$sdInsertSize" >> "$seqId"_"$sampleId"_qc.txt
+echo -e "TotalReads\tRawSequenceQuality\tTotalTargetUsableBases\tPctSelectedBases\tpctTargetBasesCt\tMeanOnTargetCoverage" > "$seqId"_"$sampleId"_qc.txt
+echo -e "$totalReads\t$rawSequenceQuality\t$totalTargetedUsableBases\t$pctSelectedBases\t$pctTargetBasesCt\t$meanOnTargetCoverage" >> "$seqId"_"$sampleId"_qc.txt
 
 #print metaline for final VCF
 echo \#\#SAMPLE\=\<ID\="$sampleId",WorklistId\="$worklistId",SeqId\="$seqId",Panel\="$panel",PipelineName\=SomaticAmplicon,PipelineVersion\="$version",RawSequenceQuality\="$rawSequenceQuality",MeanInsertSize\="$meanInsertSize",SDInsertSize\="$sdInsertSize",TotalReads\="$totalReads",PctSelectedBases\="$pctSelectedBases",MeanOnTargetCoverage\="$meanOnTargetCoverage",pctTargetBasesCt\="$pctTargetBasesCt",TotalTargetedUsableBases\="$totalTargetedUsableBases",RemoteBamFilePath\=$(find $PWD -type f -name "$seqId"_"$sampleId".bam)\> > "$seqId"_"$sampleId"_meta.txt
