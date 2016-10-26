@@ -219,10 +219,53 @@ CREATE_INDEX=true \
 IS_BISULFITE_SEQUENCE=false \
 R=/state/partition1/db/human/mappers/b37/bwa/human_g1k_v37.fasta
 
-### QC ###
+### Variant calling ###
 
-#extract thick regions from BED
-awk '{print $1"\t"$7"\t"$8"\t"$4}' /data/diagnostics/pipelines/SomaticAmplicon/SomaticAmplicon-"$version"/"$panel"/"$panel"_ROI_b37.bed > "$panel"_ROI_b37_thick.bed 
+#make bai alias for Pisces
+ln -s "$seqId"_"$sampleId".bai "$seqId"_"$sampleId".bam.bai
+
+#extract thick regions
+awk '{print $1"\t"$7"\t"$8}' /data/diagnostics/pipelines/SomaticAmplicon/SomaticAmplicon-"$version"/"$panel"/"$panel"_ROI_b37.bed | \
+/share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools merge > "$panel"_ROI_b37_thick.bed
+
+#load mono
+. /opt/mono/env.sh
+
+#SNPs and Indels with Illumina Pisces
+mono /share/apps/pisces-distros/5.1.3.60/Pisces.exe \
+-B "$seqId"_"$sampleId".bam \
+-g /data/db/human/gatk/2.8/b37 \
+-i "$panel"_ROI_b37_thick.bed \
+-f 0.01 \
+-fo false \
+-b 20 \
+-q 100 \
+-c 20 \
+-a 20 \
+-F 20 \
+-m 20 \
+-gVCF false
+
+#Annotate with low complexity region length using mdust
+/share/apps/bcftools-distros/bcftools-1.3.1/bcftools annotate \
+-a /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.mdust.v34.lpad1.bed.gz \
+-c CHROM,FROM,TO,LCRLen \
+-h <(echo '##INFO=<ID=LCRLen,Number=1,Type=Integer,Description="Overlapping mdust low complexity region length (mask cutoff: 34)">') \
+-o "$seqId"_"$sampleId"_lcr.vcf \
+"$seqId"_"$sampleId".vcf
+
+#Filter variants near to homopolymers
+/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx4g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
+-T VariantFiltration \
+-R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
+-V "$seqId"_"$sampleId"_lcr.vcf \
+--filterExpression "LCRLen > 8" \
+--filterName "LowComplexity" \
+-L "$panel"_ROI_b37_thick.bed \
+-o "$seqId"_"$sampleId"_filtered.vcf \
+-dt NONE
+
+### QC ###
 
 #Convert BED to interval_list for later
 /share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx8g -jar /share/apps/picard-tools-distros/picard-tools-2.7.1/picard.jar BedToIntervalList \
@@ -273,8 +316,40 @@ pctTargetBasesCt=$(head -n2 $seqId"_"$sampleId"_DepthOfCoverage".sample_summary 
 echo -e "TotalReads\tRawSequenceQuality\tTotalTargetUsableBases\tPctSelectedBases\tpctTargetBasesCt\tMeanOnTargetCoverage" > "$seqId"_"$sampleId"_qc.txt
 echo -e "$totalReads\t$rawSequenceQuality\t$totalTargetedUsableBases\t$pctSelectedBases\t$pctTargetBasesCt\t$meanOnTargetCoverage" >> "$seqId"_"$sampleId"_qc.txt
 
-#print metaline for final VCF
-echo \#\#SAMPLE\=\<ID\="$sampleId",WorklistId\="$worklistId",SeqId\="$seqId",Panel\="$panel",PipelineName\=SomaticAmplicon,PipelineVersion\="$version",RawSequenceQuality\="$rawSequenceQuality",TotalReads\="$totalReads",PctSelectedBases\="$pctSelectedBases",MeanOnTargetCoverage\="$meanOnTargetCoverage",pctTargetBasesCt\="$pctTargetBasesCt",TotalTargetedUsableBases\="$totalTargetedUsableBases",RemoteBamFilePath\=$(find $PWD -type f -name "$seqId"_"$sampleId".bam)\> > "$seqId"_"$sampleId"_meta.txt
+#Add VCF meta data to final VCF
+grep '^##' "$seqId"_"$sampleId"_filtered.vcf > "$seqId"_"$sampleId"_filtered_meta.vcf
+echo \#\#SAMPLE\=\<ID\="$sampleId",WorklistId\="$worklistId",SeqId\="$seqId",Panel\="$panel",PipelineName\=SomaticAmplicon,PipelineVersion\="$version",RawSequenceQuality\="$rawSequenceQuality",TotalReads\="$totalReads",PctSelectedBases\="$pctSelectedBases",MeanOnTargetCoverage\="$meanOnTargetCoverage",pctTargetBasesCt\="$pctTargetBasesCt",TotalTargetedUsableBases\="$totalTargetedUsableBases",RemoteBamFilePath\=$(find $PWD -type f -name "$seqId"_"$sampleId".bam)\> >> "$seqId"_"$sampleId"_filtered_meta.vcf
+grep -v '^##' "$seqId"_"$sampleId"_filtered.vcf >> "$seqId"_"$sampleId"_filtered_meta.vcf
+
+#Variant Evaluation
+/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx4g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
+-T VariantEval \
+-R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
+-o "$seqId"_"$sampleId"_variant_evaluation.txt \
+--eval:"$seqId"_"$sampleId" "$seqId"_"$sampleId"_filtered_meta.vcf \
+--comp:omni2.5 /state/partition1/db/human/gatk/2.8/b37/1000G_omni2.5.b37.vcf \
+--comp:hapmap3.3 /state/partition1/db/human/gatk/2.8/b37/hapmap_3.3.b37.vcf \
+--comp:cosmic78 /state/partition1/db/human/cosmic/b37/cosmic_78.b37.vcf \
+-ST JexlExpression --select_names "snp" --select_exps "vc.isSNP()" \
+-ST JexlExpression --select_names "indel" --select_exps "vc.isIndel()" \
+-L "$panel"_ROI_b37_thick.bed \
+-nt 12 \
+-dt NONE
+
+#Genotype Concordance
+/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx4g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
+-T GenotypeConcordance \
+-R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
+-o "$seqId"_"$sampleId"_genotype_evaluation.txt \
+--eval:"$seqId"_"$sampleId" "$seqId"_"$sampleId"_filtered_meta.vcf \
+--comp:omni2.5 /state/partition1/db/human/gatk/2.8/b37/1000G_omni2.5.b37.vcf \
+--comp:hapmap3.3 /state/partition1/db/human/gatk/2.8/b37/hapmap_3.3.b37.vcf \
+--comp:cosmic78 /state/partition1/db/human/cosmic/b37/cosmic_78.b37.vcf \
+-ST JexlExpression --select_names "snp" --select_exps "vc.isSNP()" \
+-ST JexlExpression --select_names "indel" --select_exps "vc.isIndel()" \
+-L "$panel"_ROI_b37_thick.bed \
+-nt 12 \
+-dt NONE
 
 ### Clean up ###
 
@@ -286,8 +361,5 @@ rm "$seqId"_"$sampleId"_*unaligned.bam "$seqId"_"$sampleId"_aligned.bam "$seqId"
 rm "$seqId"_"$sampleId"_amplicon_realigned_sorted.bam "$seqId"_"$sampleId"_amplicon_realigned_sorted.bam.bai "$seqId"_"$sampleId"_indel_realigned.intervals
 rm "$seqId"_"$sampleId"_clipped.bam "$seqId"_"$sampleId"_clipped_sorted.bam "$seqId"_"$sampleId"_clipped_sorted.bam.bai "$panel"_ROI.interval_list "$panel"_ROI_b37_thick.bed 
 
-#check if all BAMs are written
-if [ $(find .. -maxdepth 1 -mindepth 1 -type d | wc -l | sed 's/^[[:space:]]*//g') -eq $(sort ../FinalBams.list | uniq | wc -l | sed 's/^[[:space:]]*//g') ]; then
-    echo -e "seqId=$seqId\npanel=$panel" > ../variables
-    cp 2_SomaticAmplicon.sh .. && cd .. && qsub 2_SomaticAmplicon.sh
-fi
+#log with Trello
+phoneTrello "$seqId" "Analysis complete"
