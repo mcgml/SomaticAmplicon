@@ -257,7 +257,7 @@ TARGET_INTERVALS="$panel"_ROI.interval_list
 -dt NONE
 
 #Calculate gene percentage coverage
-/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx8g -jar /data/diagnostics/apps/CoverageCalculator-2.0.0/CoverageCalculator-2.0.0.jar \
+/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx8g -jar /data/diagnostics/apps/CoverageCalculator-2.0.1/CoverageCalculator-2.0.1.jar \
 "$seqId"_"$sampleId"_DepthOfCoverage \
 /data/diagnostics/pipelines/SomaticAmplicon/SomaticAmplicon-"$version"/"$panel"/"$panel"_genes.txt \
 /state/partition1/db/human/refseq/ref_GRCh37.p13_top_level.gff3 \
