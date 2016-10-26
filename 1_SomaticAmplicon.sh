@@ -213,10 +213,11 @@ TMP_DIR=/state/partition1/tmpdir
 /share/apps/samtools-distros/samtools-1.3.1/samtools index "$seqId"_"$sampleId"_clipped_sorted.bam
 
 #fix bam tags
-/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx8g -jar /share/apps/picard-tools-distros/picard-tools-2.7.1/picard.jar SetNmAndUqTags \
+/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx8g -jar /share/apps/picard-tools-distros/picard-tools-2.7.1/picard.jar SetNmMdAndUqTags \
 I="$seqId"_"$sampleId"_clipped_sorted.bam \
 O="$seqId"_"$sampleId".bam \
 CREATE_INDEX=true \
+IS_BISULFITE_SEQUENCE=false \
 R=/state/partition1/db/human/mappers/b37/bwa/human_g1k_v37.fasta
 
 ### QC ###
