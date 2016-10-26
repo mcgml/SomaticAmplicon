@@ -233,18 +233,11 @@ awk '{print $1"\t"$7"\t"$8}' /data/diagnostics/pipelines/SomaticAmplicon/Somatic
 
 #SNPs and Indels with Illumina Pisces
 mono /share/apps/pisces-distros/5.1.3.60/Pisces.exe \
--B "$seqId"_"$sampleId".bam \
+-B ./"$seqId"_"$sampleId".bam \
 -g /data/db/human/gatk/2.8/b37 \
 -i "$panel"_ROI_b37_thick.bed \
--f 0.01 \
--fo false \
--b 20 \
--q 100 \
--c 20 \
--a 20 \
--F 20 \
--m 20 \
--gVCF false
+-CallMNVs \
+-c 30
 
 #Annotate with low complexity region length using mdust
 /share/apps/bcftools-distros/bcftools-1.3.1/bcftools annotate \
@@ -353,13 +346,10 @@ grep -v '^##' "$seqId"_"$sampleId"_filtered.vcf >> "$seqId"_"$sampleId"_filtered
 
 ### Clean up ###
 
-#create final file lists
-find $PWD -name "$seqId"_"$sampleId".bam >> ../FinalBams.list
-
 #delete unused files
-rm "$seqId"_"$sampleId"_*unaligned.bam "$seqId"_"$sampleId"_aligned.bam "$seqId"_"$sampleId"_aligned.bai "$seqId"_"$sampleId"_amplicon_realigned.bam
-rm "$seqId"_"$sampleId"_amplicon_realigned_sorted.bam "$seqId"_"$sampleId"_amplicon_realigned_sorted.bam.bai "$seqId"_"$sampleId"_indel_realigned.intervals
-rm "$seqId"_"$sampleId"_clipped.bam "$seqId"_"$sampleId"_clipped_sorted.bam "$seqId"_"$sampleId"_clipped_sorted.bam.bai "$panel"_ROI.interval_list "$panel"_ROI_b37_thick.bed 
+#rm "$seqId"_"$sampleId"_*unaligned.bam "$seqId"_"$sampleId"_aligned.bam "$seqId"_"$sampleId"_aligned.bai "$seqId"_"$sampleId"_amplicon_realigned.bam
+#rm "$seqId"_"$sampleId"_amplicon_realigned_sorted.bam "$seqId"_"$sampleId"_amplicon_realigned_sorted.bam.bai "$seqId"_"$sampleId"_indel_realigned.intervals
+#rm "$seqId"_"$sampleId"_clipped.bam "$seqId"_"$sampleId"_clipped_sorted.bam "$seqId"_"$sampleId"_clipped_sorted.bam.bai "$panel"_ROI.interval_list "$panel"_ROI_b37_thick.bed 
 
 #log with Trello
 phoneTrello "$seqId" "Analysis complete"
