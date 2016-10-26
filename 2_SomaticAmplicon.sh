@@ -44,9 +44,18 @@ addMetaDataToVCF(){
 
 #load run & pipeline variables
 . variables
-. /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel".variables
+. /data/diagnostics/pipelines/SomaticAmplicon/SomaticAmplicon-"$version"/"$panel"/"$panel".variables
 
 ### Variant calling ###
+
+#extract thick regions
+awk '{print $1"\t"$7"\t"$8"\t"$4}' /data/diagnostics/pipelines/SomaticAmplicon/SomaticAmplicon-"$version"/"$panel"/"$panel"_ROI_b37.bed > "$panel"_ROI_b37_thick.bed
+
+#Convert BED to interval_list for variant calling
+/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx8g -jar /share/apps/picard-tools-distros/picard-tools-2.7.1/picard.jar BedToIntervalList \
+I="$panel"_ROI_b37_thick.bed \
+O="$panel"_ROI.interval_list \
+SD=/state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.dict
 
 #load mono
 . /opt/mono/env.sh
@@ -55,7 +64,7 @@ addMetaDataToVCF(){
 mono /share/apps/pisces-distros/5.1.3.60/Pisces.exe \
 -B $(tr '\n' ',' FinalBams.list) \
 -g /data/db/human/gatk/2.8/b37 \
--i /data/diagnostics/pipelines/SomaticAmplicon/SomaticAmplicon-"$version"/"$panel"/"$panel"_ROI_b37.bed \
+-i "$panel"_ROI.interval_list \
 -f 0.01 \
 -fo false \
 -b 20 \
@@ -86,7 +95,7 @@ mono /share/apps/pisces-distros/5.1.3.60/Pisces.exe \
 --filterName "LowComplexity" 
 --genotypeFilterExpression "DP < 20" \
 --genotypeFilterName "LowDP" \
--L /data/diagnostics/pipelines/SomaticAmplicon/SomaticAmplicon-"$version"/"$panel"/"$panel"_ROI_b37.bed \
+-L "$panel"_ROI_b37_thick.bed \
 -o "$seqId"_filtered.vcf \
 -dt NONE
 
@@ -106,7 +115,7 @@ addMetaDataToVCF "$seqId"_filtered.vcf
 --comp:cosmic78 /state/partition1/db/human/cosmic/b37/cosmic_78.b37.vcf \
 -ST JexlExpression --select_names "snp" --select_exps "vc.isSNP()" \
 -ST JexlExpression --select_names "indel" --select_exps "vc.isIndel()" \
--L /data/diagnostics/pipelines/SomaticAmplicon/SomaticAmplicon-"$version"/"$panel"/"$panel"_ROI_b37.bed \
+-L "$panel"_ROI_b37_thick.bed \
 -nt 12 \
 -dt NONE
 
@@ -121,14 +130,14 @@ addMetaDataToVCF "$seqId"_filtered.vcf
 --comp:cosmic78 /state/partition1/db/human/cosmic/b37/cosmic_78.b37.vcf \
 -ST JexlExpression --select_names "snp" --select_exps "vc.isSNP()" \
 -ST JexlExpression --select_names "indel" --select_exps "vc.isIndel()" \
--L /data/diagnostics/pipelines/SomaticAmplicon/SomaticAmplicon-"$version"/"$panel"/"$panel"_ROI_b37.bed \
+-L "$panel"_ROI_b37_thick.bed \
 -nt 12 \
 -dt NONE
 
 ### Clean up ###
 
 #delete unused files
-rm "$seqId"_variants.lcr.vcf "$seqId"_variants.lcr.vcf.idx "$seqId"_filtered.vcf "$seqId"_filtered.vcf.idx
+rm "$seqId"_variants.lcr.vcf "$seqId"_variants.lcr.vcf.idx "$seqId"_filtered.vcf "$seqId"_filtered.vcf.idx "$panel"_ROI_b37_thick.bed "$panel"_ROI.interval_list
 
 #log with Trello
 phoneTrello "$seqId" "Analysis complete"
