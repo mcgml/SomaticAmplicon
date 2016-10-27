@@ -336,22 +336,9 @@ grep -v '^##' "$seqId"_"$sampleId"_filtered.vcf >> "$seqId"_"$sampleId"_filtered
 -nt 12 \
 -dt NONE
 
-#Genotype Concordance
-/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx4g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
--T GenotypeConcordance \
--R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
--o "$seqId"_"$sampleId"_genotype_evaluation.txt \
---eval:"$seqId"_"$sampleId" "$seqId"_"$sampleId"_filtered_meta.vcf \
---comp:omni2.5 /state/partition1/db/human/gatk/2.8/b37/1000G_omni2.5.b37.vcf \
---comp:hapmap3.3 /state/partition1/db/human/gatk/2.8/b37/hapmap_3.3.b37.vcf \
---comp:cosmic78 /state/partition1/db/human/cosmic/b37/cosmic_78.b37.vcf \
--L "$panel"_ROI_b37_thick.bed \
--nt 12 \
--dt NONE
-
 ### Reporting ###
 
-#annoatate VCF with VEP
+#annotate VCF with VEP
 perl /share/apps/vep-distros/ensembl-tools-release-86/scripts/variant_effect_predictor/variant_effect_predictor.pl \
 --verbose \
 --no_progress \
@@ -385,7 +372,7 @@ perl /share/apps/vep-distros/ensembl-tools-release-86/scripts/variant_effect_pre
 #rm "$seqId"_"$sampleId"_*unaligned.bam "$seqId"_"$sampleId"_aligned.bam "$seqId"_"$sampleId"_aligned.bai "$seqId"_"$sampleId"_amplicon_realigned.bam
 #rm "$seqId"_"$sampleId"_amplicon_realigned_sorted.bam "$seqId"_"$sampleId"_amplicon_realigned_sorted.bam.bai "$seqId"_"$sampleId"_indel_realigned.intervals
 #rm "$seqId"_"$sampleId"_clipped.bam "$seqId"_"$sampleId"_clipped_sorted.bam "$seqId"_"$sampleId"_clipped_sorted.bam.bai "$panel"_ROI.interval_list "$panel"_ROI_b37_thick.bed
-#rm "$seqId"_"$sampleId"_left_aligned.vcf "$seqId"_"$sampleId"_left_aligned.vcf.idx
+#rm "$seqId"_"$sampleId"_left_aligned.vcf "$seqId"_"$sampleId"_left_aligned.vcf.idx "$seqId"_"$sampleId".bam.bai
 
 #log with Trello
 phoneTrello "$seqId" "Analysis complete"
