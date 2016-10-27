@@ -239,13 +239,22 @@ mono /share/apps/pisces-distros/5.1.3.60/Pisces.exe \
 -CallMNVs true \
 -c 30
 
+#left align and trim variants
+/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx2g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
+-T LeftAlignAndTrimVariants \
+-R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
+-o "$seqId"_"$sampleId"_left_aligned.vcf \
+-V "$seqId"_"$sampleId".vcf \
+-L "$panel"_ROI_b37_thick.bed \
+-dt NONE
+
 #Annotate with low complexity region length using mdust
 /share/apps/bcftools-distros/bcftools-1.3.1/bcftools annotate \
 -a /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.mdust.v34.lpad1.bed.gz \
 -c CHROM,FROM,TO,LCRLen \
 -h <(echo '##INFO=<ID=LCRLen,Number=1,Type=Integer,Description="Overlapping mdust low complexity region length (mask cutoff: 34)">') \
 -o "$seqId"_"$sampleId"_lcr.vcf \
-"$seqId"_"$sampleId".vcf
+"$seqId"_"$sampleId"_left_aligned.vcf
 
 #Filter variants near to homopolymers
 /share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx4g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
@@ -323,8 +332,6 @@ grep -v '^##' "$seqId"_"$sampleId"_filtered.vcf >> "$seqId"_"$sampleId"_filtered
 --comp:omni2.5 /state/partition1/db/human/gatk/2.8/b37/1000G_omni2.5.b37.vcf \
 --comp:hapmap3.3 /state/partition1/db/human/gatk/2.8/b37/hapmap_3.3.b37.vcf \
 --comp:cosmic78 /state/partition1/db/human/cosmic/b37/cosmic_78.b37.vcf \
--ST JexlExpression --select_names "snp" --select_exps "vc.isSNP()" \
--ST JexlExpression --select_names "indel" --select_exps "vc.isIndel()" \
 -L "$panel"_ROI_b37_thick.bed \
 -nt 12 \
 -dt NONE
@@ -338,8 +345,6 @@ grep -v '^##' "$seqId"_"$sampleId"_filtered.vcf >> "$seqId"_"$sampleId"_filtered
 --comp:omni2.5 /state/partition1/db/human/gatk/2.8/b37/1000G_omni2.5.b37.vcf \
 --comp:hapmap3.3 /state/partition1/db/human/gatk/2.8/b37/hapmap_3.3.b37.vcf \
 --comp:cosmic78 /state/partition1/db/human/cosmic/b37/cosmic_78.b37.vcf \
--ST JexlExpression --select_names "snp" --select_exps "vc.isSNP()" \
--ST JexlExpression --select_names "indel" --select_exps "vc.isIndel()" \
 -L "$panel"_ROI_b37_thick.bed \
 -nt 12 \
 -dt NONE
@@ -347,6 +352,31 @@ grep -v '^##' "$seqId"_"$sampleId"_filtered.vcf >> "$seqId"_"$sampleId"_filtered
 ### Reporting ###
 
 #annoatate VCF with VEP
+perl /share/apps/vep-distros/ensembl-tools-release-86/scripts/variant_effect_predictor/variant_effect_predictor.pl \
+--verbose \
+--no_progress \
+--everything \
+--fork 12 \
+--species homo_sapiens \
+--assembly GRCh37 \
+--input_file "$seqId"_"$sampleId"_filtered_meta.vcf \
+--format vcf \
+--output_file "$seqId"_"$sampleId"_filtered_meta_annotated.vcf \
+--force_overwrite \
+--no_stats \
+--cache \
+--dir /share/apps/vep-distros/ensembl-tools-release-86/scripts/variant_effect_predictor/annotations \
+--fasta /share/apps/vep-distros/ensembl-tools-release-86/scripts/variant_effect_predictor/annotations \
+--offline \
+--cache_version 86 \
+--allele_number \
+--no_escape \
+--shift_hgvs 1 \
+--vcf \
+--refseq
+
+#write to table
+
 
 
 ### Clean up ###
@@ -354,7 +384,8 @@ grep -v '^##' "$seqId"_"$sampleId"_filtered.vcf >> "$seqId"_"$sampleId"_filtered
 #delete unused files
 #rm "$seqId"_"$sampleId"_*unaligned.bam "$seqId"_"$sampleId"_aligned.bam "$seqId"_"$sampleId"_aligned.bai "$seqId"_"$sampleId"_amplicon_realigned.bam
 #rm "$seqId"_"$sampleId"_amplicon_realigned_sorted.bam "$seqId"_"$sampleId"_amplicon_realigned_sorted.bam.bai "$seqId"_"$sampleId"_indel_realigned.intervals
-#rm "$seqId"_"$sampleId"_clipped.bam "$seqId"_"$sampleId"_clipped_sorted.bam "$seqId"_"$sampleId"_clipped_sorted.bam.bai "$panel"_ROI.interval_list "$panel"_ROI_b37_thick.bed 
+#rm "$seqId"_"$sampleId"_clipped.bam "$seqId"_"$sampleId"_clipped_sorted.bam "$seqId"_"$sampleId"_clipped_sorted.bam.bai "$panel"_ROI.interval_list "$panel"_ROI_b37_thick.bed
+#rm "$seqId"_"$sampleId"_left_aligned.vcf "$seqId"_"$sampleId"_left_aligned.vcf.idx
 
 #log with Trello
 phoneTrello "$seqId" "Analysis complete"
