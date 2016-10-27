@@ -240,12 +240,20 @@ mono /share/apps/pisces-distros/5.1.3.60/Pisces.exe \
 -CallMNVs true \
 -c 30
 
+#fix VCF name
+echo "$sampleId" > name
+/share/apps/bcftools-distros/bcftools-1.2/bcftools reheader \
+-s name \
+-o "$seqId"_"$sampleId"_fixed.vcf \
+"$seqId"_"$sampleId".vcf
+rm name
+
 #left align and trim variants
 /share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx2g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
 -T LeftAlignAndTrimVariants \
 -R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 -o "$seqId"_"$sampleId"_left_aligned.vcf \
--V "$seqId"_"$sampleId".vcf \
+-V "$seqId"_"$sampleId"_fixed.vcf \
 -L "$panel"_ROI_b37_thick.bed \
 -dt NONE
 
