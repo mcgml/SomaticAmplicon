@@ -344,6 +344,11 @@ grep -v '^##' "$seqId"_"$sampleId"_filtered.vcf >> "$seqId"_"$sampleId"_filtered
 -nt 12 \
 -dt NONE
 
+### Reporting ###
+
+#annoatate VCF with VEP
+
+
 ### Clean up ###
 
 #delete unused files
