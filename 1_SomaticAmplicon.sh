@@ -236,7 +236,7 @@ mono /share/apps/pisces-distros/5.1.3.60/Pisces.exe \
 -B ./"$seqId"_"$sampleId".bam \
 -g /data/db/human/gatk/2.8/b37 \
 -i "$panel"_ROI_b37_thick.bed \
--CallMNVs \
+-CallMNVs true \
 -c 30
 
 #Annotate with low complexity region length using mdust
