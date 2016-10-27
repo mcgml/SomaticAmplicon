@@ -35,6 +35,7 @@ phoneTrello() {
     #/share/apps/node-distros/node-v4.4.7-linux-x64/bin/node \
     #/data/diagnostics/scripts/TrelloAPI.js \
     #"$1" "$2" #seqId & message
+    echo "$1" "$2"
 }
 
 countQCFlagFails() {
