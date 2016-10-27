@@ -32,9 +32,9 @@ version="dev"
 
 phoneTrello() {
     #Call trello API
-    /share/apps/node-distros/node-v4.4.7-linux-x64/bin/node \
-    /data/diagnostics/scripts/TrelloAPI.js \
-    "$1" "$2" #seqId & message
+    #/share/apps/node-distros/node-v4.4.7-linux-x64/bin/node \
+    #/data/diagnostics/scripts/TrelloAPI.js \
+    #"$1" "$2" #seqId & message
 }
 
 countQCFlagFails() {
