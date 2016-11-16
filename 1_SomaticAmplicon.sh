@@ -171,6 +171,13 @@ TMP_DIR=/state/partition1/tmpdir
 /share/apps/samtools-distros/samtools-1.3.1/samtools sort -m4G -o "$seqId"_"$sampleId"_amplicon_realigned_sorted.bam "$seqId"_"$sampleId"_amplicon_realigned.bam
 /share/apps/samtools-distros/samtools-1.3.1/samtools index "$seqId"_"$sampleId"_amplicon_realigned_sorted.bam
 
+#left align indels
+/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx8g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
+-T LeftAlignIndels \
+-R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
+-I "$seqId"_"$sampleId"_amplicon_realigned_sorted.bam \
+-o "$seqId"_"$sampleId"_amplicon_realigned_left_sorted.bam
+
 #Identify regions requiring realignment
 /share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx24g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
 -T RealignerTargetCreator \
@@ -178,7 +185,7 @@ TMP_DIR=/state/partition1/tmpdir
 -known /state/partition1/db/human/gatk/2.8/b37/1000G_phase1.indels.b37.vcf \
 -known /state/partition1/db/human/gatk/2.8/b37/Mills_and_1000G_gold_standard.indels.b37.vcf \
 -known /state/partition1/db/human/cosmic/b37/cosmic_78.indels.b37.vcf \
--I "$seqId"_"$sampleId"_amplicon_realigned_sorted.bam \
+-I "$seqId"_"$sampleId"_amplicon_realigned_left_sorted.bam \
 -o "$seqId"_"$sampleId"_indel_realigned.intervals \
 -L /data/diagnostics/pipelines/SomaticAmplicon/SomaticAmplicon-"$version"/"$panel"/"$panel"_ROI_b37.bed \
 -ip "$padding" \
@@ -198,7 +205,7 @@ TMP_DIR=/state/partition1/tmpdir
 --maxReadsForConsensuses 600 \
 --maxReadsInMemory 250000 \
 -LOD 0.4 \
--I "$seqId"_"$sampleId"_amplicon_realigned_sorted.bam \
+-I "$seqId"_"$sampleId"_amplicon_realigned_left_sorted.bam \
 -o "$seqId"_"$sampleId"_indel_realigned.bam \
 -dt NONE
 
@@ -373,15 +380,13 @@ perl /share/apps/vep-distros/ensembl-tools-release-86/scripts/variant_effect_pre
 
 #write to table
 
-
-
 ### Clean up ###
 
 #delete unused files
 #rm "$seqId"_"$sampleId"_*unaligned.bam "$seqId"_"$sampleId"_aligned.bam "$seqId"_"$sampleId"_aligned.bai "$seqId"_"$sampleId"_amplicon_realigned.bam
 #rm "$seqId"_"$sampleId"_amplicon_realigned_sorted.bam "$seqId"_"$sampleId"_amplicon_realigned_sorted.bam.bai "$seqId"_"$sampleId"_indel_realigned.intervals
 #rm "$seqId"_"$sampleId"_clipped.bam "$seqId"_"$sampleId"_clipped_sorted.bam "$seqId"_"$sampleId"_clipped_sorted.bam.bai "$panel"_ROI.interval_list "$panel"_ROI_b37_thick.bed
-#rm "$seqId"_"$sampleId"_left_aligned.vcf "$seqId"_"$sampleId"_left_aligned.vcf.idx "$seqId"_"$sampleId".bam.bai
+#rm "$seqId"_"$sampleId"_left_aligned.vcf "$seqId"_"$sampleId"_left_aligned.vcf.idx "$seqId"_"$sampleId".bam.bai "$seqId"_"$sampleId"_amplicon_realigned_left_sorted.bam "$seqId"_"$sampleId"_amplicon_realigned_left_sorted.bam.bai
 
 #log with Trello
 phoneTrello "$seqId" "Analysis complete"
