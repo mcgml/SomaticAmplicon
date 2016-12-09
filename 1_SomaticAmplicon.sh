@@ -176,7 +176,8 @@ TMP_DIR=/state/partition1/tmpdir
 -T LeftAlignIndels \
 -R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 -I "$seqId"_"$sampleId"_amplicon_realigned_sorted.bam \
--o "$seqId"_"$sampleId"_amplicon_realigned_left_sorted.bam
+-o "$seqId"_"$sampleId"_amplicon_realigned_left_sorted.bam \
+-dt NONE
 
 #Identify regions requiring realignment
 /share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx24g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
