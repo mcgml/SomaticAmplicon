@@ -8,7 +8,7 @@ cd $PBS_O_WORKDIR
 #Description: Somatic Amplicon Pipeline (Illumina paired-end). Not for use with other library preps/ experimental conditions.
 #Author: Matt Lyon, All Wales Medical Genetics Lab
 #Mode: BY_SAMPLE
-version="dev"
+version="1.0.0"
 
 # Directory structure required for pipeline
 #
@@ -244,7 +244,6 @@ mono /share/apps/pisces-distros/5.1.6.54/Pisces.exe \
 -B ./"$seqId"_"$sampleId".bam \
 -g /data/db/human/gatk/2.8/b37 \
 -i "$panel"_ROI_b37_thick.bed \
--CallMNVs true \
 -c 15
 
 #fix VCF name
@@ -380,13 +379,14 @@ perl /share/apps/vep-distros/ensembl-tools-release-86/scripts/variant_effect_pre
 
 #write to table
 
+
 ### Clean up ###
 
 #delete unused files
-#rm "$seqId"_"$sampleId"_*unaligned.bam "$seqId"_"$sampleId"_aligned.bam "$seqId"_"$sampleId"_aligned.bai "$seqId"_"$sampleId"_amplicon_realigned.bam
-#rm "$seqId"_"$sampleId"_amplicon_realigned_sorted.bam "$seqId"_"$sampleId"_amplicon_realigned_sorted.bam.bai "$seqId"_"$sampleId"_indel_realigned.intervals
-#rm "$seqId"_"$sampleId"_clipped.bam "$seqId"_"$sampleId"_clipped_sorted.bam "$seqId"_"$sampleId"_clipped_sorted.bam.bai "$panel"_ROI.interval_list "$panel"_ROI_b37_thick.bed
-#rm "$seqId"_"$sampleId"_left_aligned.vcf "$seqId"_"$sampleId"_left_aligned.vcf.idx "$seqId"_"$sampleId".bam.bai "$seqId"_"$sampleId"_amplicon_realigned_left_sorted.bam "$seqId"_"$sampleId"_amplicon_realigned_left_sorted.bam.bai
+rm "$seqId"_"$sampleId"_*unaligned.bam "$seqId"_"$sampleId"_aligned.bam "$seqId"_"$sampleId"_aligned.bai "$seqId"_"$sampleId"_amplicon_realigned.bam
+rm "$seqId"_"$sampleId"_amplicon_realigned_sorted.bam "$seqId"_"$sampleId"_amplicon_realigned_sorted.bam.bai "$seqId"_"$sampleId"_indel_realigned.intervals
+rm "$seqId"_"$sampleId"_clipped.bam "$seqId"_"$sampleId"_clipped_sorted.bam "$seqId"_"$sampleId"_clipped_sorted.bam.bai "$panel"_ROI.interval_list "$panel"_ROI_b37_thick.bed
+rm "$seqId"_"$sampleId"_left_aligned.vcf "$seqId"_"$sampleId"_left_aligned.vcf.idx "$seqId"_"$sampleId".bam.bai "$seqId"_"$sampleId"_amplicon_realigned_left_sorted.bam "$seqId"_"$sampleId"_amplicon_realigned_left_sorted.bam.bai
 
 #log with Trello
 phoneTrello "$seqId" "Analysis complete"
