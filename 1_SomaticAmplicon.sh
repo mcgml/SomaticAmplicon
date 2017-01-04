@@ -8,7 +8,7 @@ cd $PBS_O_WORKDIR
 #Description: Somatic Amplicon Pipeline (Illumina paired-end). Not for use with other library preps/ experimental conditions.
 #Author: Matt Lyon, All Wales Medical Genetics Lab
 #Mode: BY_SAMPLE
-version="1.0.0"
+version="1.0.1"
 
 # Directory structure required for pipeline
 #
@@ -242,9 +242,11 @@ awk '{print $1"\t"$7"\t"$8}' /data/diagnostics/pipelines/SomaticAmplicon/Somatic
 #SNPs and Indels with Illumina Pisces
 mono /share/apps/pisces-distros/5.1.6.54/Pisces.exe \
 -B ./"$seqId"_"$sampleId".bam \
+-MinimumFrequency 0.01 \
 -g /data/db/human/gatk/2.8/b37 \
 -i "$panel"_ROI_b37_thick.bed \
--c 15
+-MinMQ 20 \
+-t 8
 
 #fix VCF name
 echo "$sampleId" > name
@@ -263,21 +265,36 @@ rm name
 -L "$panel"_ROI_b37_thick.bed \
 -dt NONE
 
+#Annotate with GATK contextual information
+/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx4g -jar /share/apps/GATK-distros/GATK_3.7.0/GenomeAnalysisTK.jar \
+-T VariantAnnotator \
+-R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
+-I "$seqId"_"$sampleId".bam \
+-V "$seqId"_"$sampleId"_left_aligned.vcf \
+-L "$panel"_ROI_b37_thick.bed \
+-o "$seqId"_"$sampleId"_left_aligned_annotated.vcf \
+-A BaseQualityRankSumTest -A ChromosomeCounts -A MappingQualityRankSumTest -A MappingQualityZero -A RMSMappingQuality \
+-dt NONE
+
 #Annotate with low complexity region length using mdust
 /share/apps/bcftools-distros/bcftools-1.3.1/bcftools annotate \
 -a /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.mdust.v34.lpad1.bed.gz \
 -c CHROM,FROM,TO,LCRLen \
 -h <(echo '##INFO=<ID=LCRLen,Number=1,Type=Integer,Description="Overlapping mdust low complexity region length (mask cutoff: 34)">') \
 -o "$seqId"_"$sampleId"_lcr.vcf \
-"$seqId"_"$sampleId"_left_aligned.vcf
+"$seqId"_"$sampleId"_left_aligned_annotated.vcf
 
-#Filter variants near to homopolymers
+#Filter variants
 /share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx4g -jar /share/apps/GATK-distros/GATK_3.7.0/GenomeAnalysisTK.jar \
 -T VariantFiltration \
 -R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 -V "$seqId"_"$sampleId"_lcr.vcf \
 --filterExpression "LCRLen > 8" \
 --filterName "LowComplexity" \
+--filterExpression "MQ < 40.0" \
+--filterName "MQ" \
+--filterExpression "DP < 50" \
+--filterName "LowDP" \
 -L "$panel"_ROI_b37_thick.bed \
 -o "$seqId"_"$sampleId"_filtered.vcf \
 -dt NONE
@@ -377,8 +394,14 @@ perl /share/apps/vep-distros/ensembl-tools-release-86/scripts/variant_effect_pre
 --vcf \
 --refseq
 
-#write to table
+#index & validate final VCF
+/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx2g -jar /share/apps/GATK-distros/GATK_3.7.0/GenomeAnalysisTK.jar \
+-T ValidateVariants \
+-R /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
+-V "$seqId"_"$sampleId"_filtered_meta_annotated.vcf \
+-dt NONE
 
+#write to table
 
 ### Clean up ###
 
@@ -386,7 +409,12 @@ perl /share/apps/vep-distros/ensembl-tools-release-86/scripts/variant_effect_pre
 rm "$seqId"_"$sampleId"_*unaligned.bam "$seqId"_"$sampleId"_aligned.bam "$seqId"_"$sampleId"_aligned.bai "$seqId"_"$sampleId"_amplicon_realigned.bam
 rm "$seqId"_"$sampleId"_amplicon_realigned_sorted.bam "$seqId"_"$sampleId"_amplicon_realigned_sorted.bam.bai "$seqId"_"$sampleId"_indel_realigned.intervals
 rm "$seqId"_"$sampleId"_clipped.bam "$seqId"_"$sampleId"_clipped_sorted.bam "$seqId"_"$sampleId"_clipped_sorted.bam.bai "$panel"_ROI.interval_list "$panel"_ROI_b37_thick.bed
-rm "$seqId"_"$sampleId"_left_aligned.vcf "$seqId"_"$sampleId"_left_aligned.vcf.idx "$seqId"_"$sampleId".bam.bai "$seqId"_"$sampleId"_amplicon_realigned_left_sorted.bam "$seqId"_"$sampleId"_amplicon_realigned_left_sorted.bam.bai
+rm "$seqId"_"$sampleId"_left_aligned.vcf "$seqId"_"$sampleId"_left_aligned.vcf.idx "$seqId"_"$sampleId".bam.bai "$seqId"_"$sampleId"_amplicon_realigned_left_sorted.bam
+rm "$seqId"_"$sampleId"_amplicon_realigned_left_sorted.bai "$seqId"_"$sampleId"_filtered_meta.vcf "$seqId"_"$sampleId"_filtered_meta.vcf.idx "$seqId"_"$sampleId"_filtered.vcf
+rm "$seqId"_"$sampleId"_filtered.vcf.idx "$seqId"_"$sampleId"_fixed.vcf "$seqId"_"$sampleId"_fixed.vcf.idx "$seqId"_"$sampleId"_indel_realigned.bam "$seqId"_"$sampleId"_indel_realigned.bai
+rm "$seqId"_"$sampleId"_*_fastqc.zip "$seqId"_"$sampleId"_lcr.vcf "$seqId"_"$sampleId"_lcr.vcf.idx "$seqId"_"$sampleId"_lcr.vcf "$seqId"_"$sampleId"_lcr.vcf.idx "$seqId"_"$sampleId".vcf
+rm "$seqId"_"$sampleId"_left_aligned_annotated.vcf "$seqId"_"$sampleId"_left_aligned_annotated.vcf.idx
+rm -r PiscesLogs
 
 #log with Trello
 phoneTrello "$seqId" "Analysis complete"
