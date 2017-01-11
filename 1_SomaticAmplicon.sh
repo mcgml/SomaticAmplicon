@@ -1,14 +1,14 @@
 #!/bin/bash
 #PBS -l walltime=20:00:00
 #PBS -l ncpus=12
-set -euo pipefail
+set -euo pipefail -o xtrace
 PBS_O_WORKDIR=(`echo $PBS_O_WORKDIR | sed "s/^\/state\/partition1//" `)
 cd $PBS_O_WORKDIR
 
 #Description: Somatic Amplicon Pipeline (Illumina paired-end). Not for use with other library preps/ experimental conditions.
 #Author: Matt Lyon, All Wales Medical Genetics Lab
 #Mode: BY_SAMPLE
-version="1.1.1"
+version="1.1.2"
 
 # Directory structure required for pipeline
 #
@@ -104,7 +104,7 @@ for fastqPair in $(ls "$sampleId"_S*.fastq.gz | cut -d_ -f1-3 | sort | uniq); do
 
     #check FASTQC output
     if [ $(countQCFlagFails "$seqId"_"$sampleId"_"$laneId"_R1_fastqc/summary.txt) -gt 0 ] || [ $(countQCFlagFails "$seqId"_"$sampleId"_"$laneId"_R2_fastqc/summary.txt) -gt 0 ]; then
-        phoneTrello "$seqId" "$sampleId has failed raw sequence quality check for $laneId"
+        phoneTrello "$seqId" "$sampleId has failed FASTQC for $laneId"
         rawSequenceQuality=FAIL
     fi
 
@@ -160,7 +160,7 @@ CREATE_INDEX=true \
 TMP_DIR=/state/partition1/tmpdir
 
 #Realign soft clipped bases
-/share/apps/jre-distros/jre1.8.0_101/bin/java -Xmx2g -jar /data/diagnostics/apps/AmpliconRealigner/AmpliconRealigner-1.0.0.jar \
+/share/apps/jre-distros/jre1.8.0_101/bin/java -Xmx2g -jar /data/diagnostics/apps/AmpliconRealigner/AmpliconRealigner-1.1.1.jar \
 -I "$seqId"_"$sampleId"_aligned.bam \
 -O "$seqId"_"$sampleId"_amplicon_realigned.bam \
 -R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
@@ -200,17 +200,17 @@ TMP_DIR=/state/partition1/tmpdir
 -known /state/partition1/db/human/gatk/2.8/b37/Mills_and_1000G_gold_standard.indels.b37.vcf \
 -known /state/partition1/db/human/cosmic/b37/cosmic_78.indels.b37.vcf \
 -targetIntervals "$seqId"_"$sampleId"_indel_realigned.intervals \
---maxReadsForRealignment 100000 \
---maxConsensuses 150 \
---maxReadsForConsensuses 600 \
---maxReadsInMemory 250000 \
+--maxReadsForRealignment 500000 \
+--maxConsensuses 750 \
+--maxReadsForConsensuses 3000 \
+--maxReadsInMemory 1250000 \
 -LOD 0.4 \
 -I "$seqId"_"$sampleId"_amplicon_realigned_left_sorted.bam \
 -o "$seqId"_"$sampleId"_indel_realigned.bam \
 -dt NONE
 
 #soft clip PCR primers
-/share/apps/jre-distros/jre1.8.0_101/bin/java -Xmx2g -jar /data/diagnostics/apps/SoftClipPCRPrimer/SoftClipPCRPrimer-1.0.0.jar \
+/share/apps/jre-distros/jre1.8.0_101/bin/java -Xmx2g -jar /data/diagnostics/apps/SoftClipPCRPrimer/SoftClipPCRPrimer-1.1.0.jar \
 -I "$seqId"_"$sampleId"_indel_realigned.bam \
 -O "$seqId"_"$sampleId"_clipped.bam \
 -T /data/diagnostics/pipelines/SomaticAmplicon/SomaticAmplicon-"$version"/"$panel"/"$panel"_ROI_b37.bed
