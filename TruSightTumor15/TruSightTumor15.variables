@@ -1,5 +1,5 @@
 read1Adapter=TGGAATTCTCGGGTGCCAAGG #read 1 adapter to trim
 read2Adapter=AGATCGGAAGAGCGTCGTGTA #read 2 adapter to trim
 padding=250 #Amount of padding for GATK preprocessing.
-minimumCoverage=1000 # for passing regions. Need to determine during clinical validation
+minimumCoverage=500 # for passing regions. Need to determine during clinical validation
 expectedInsertSize=200 #insert size

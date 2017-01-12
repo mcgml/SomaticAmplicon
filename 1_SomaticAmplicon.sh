@@ -1,14 +1,14 @@
 #!/bin/bash
 #PBS -l walltime=20:00:00
 #PBS -l ncpus=12
-set -euo pipefail -o xtrace
+set -euo pipefail
 PBS_O_WORKDIR=(`echo $PBS_O_WORKDIR | sed "s/^\/state\/partition1//" `)
 cd $PBS_O_WORKDIR
 
 #Description: Somatic Amplicon Pipeline (Illumina paired-end). Not for use with other library preps/ experimental conditions.
 #Author: Matt Lyon, All Wales Medical Genetics Lab
 #Mode: BY_SAMPLE
-version="1.1.2"
+version="1.2.1"
 
 # Directory structure required for pipeline
 #
@@ -330,7 +330,7 @@ TARGET_INTERVALS="$panel"_ROI.interval_list
 -nt 12 \
 -dt NONE
 
-#Calculate gene percentage coverage
+#Calculate gene (clinical) percentage coverage
 /share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx8g -jar /data/diagnostics/apps/CoverageCalculator-2.0.2/CoverageCalculator-2.0.2.jar \
 "$seqId"_"$sampleId"_DepthOfCoverage \
 /data/diagnostics/pipelines/SomaticAmplicon/SomaticAmplicon-"$version"/"$panel"/"$panel"_genes.txt \
@@ -346,7 +346,7 @@ totalTargetedUsableBases=$(head -n2 $seqId"_"$sampleId"_DepthOfCoverage".sample_
 meanOnTargetCoverage=$(head -n2 $seqId"_"$sampleId"_DepthOfCoverage".sample_summary | tail -n1 | cut -s -f3) #avg usable coverage
 pctTargetBasesCt=$(head -n2 $seqId"_"$sampleId"_DepthOfCoverage".sample_summary | tail -n1 | cut -s -f7) #percentage panel covered with good enough data for variant detection
 
-#Print QC metricss
+#Print QC metrics
 echo -e "TotalReads\tRawSequenceQuality\tTotalTargetUsableBases\tPctSelectedBases\tpctTargetBasesCt\tMeanOnTargetCoverage" > "$seqId"_"$sampleId"_qc.txt
 echo -e "$totalReads\t$rawSequenceQuality\t$totalTargetedUsableBases\t$pctSelectedBases\t$pctTargetBasesCt\t$meanOnTargetCoverage" >> "$seqId"_"$sampleId"_qc.txt
 
@@ -401,7 +401,71 @@ perl /share/apps/vep-distros/ensembl-tools-release-86/scripts/variant_effect_pre
 -V "$seqId"_"$sampleId"_filtered_meta_annotated.vcf \
 -dt NONE
 
-#write to table
+#write full dataset to table
+#TODO
+
+#custom coverage reporting
+mkdir hotspot_coverage
+for bedFile in $(ls /data/diagnostics/pipelines/SomaticAmplicon/SomaticAmplicon-"$version"/"$panel"/hotspot_coverage/*.bed); do
+
+    #extract target name
+    target=$(basename "$bedFile" | sed 's/\.bed//g')
+
+    #generate per-base coverage
+    /share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx12g -jar /share/apps/GATK-distros/GATK_3.7.0/GenomeAnalysisTK.jar \
+    -T DepthOfCoverage \
+    -R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
+    -o "$seqId"_"$sampleId"_"$target" \
+    -I "$seqId"_"$sampleId".bam \
+    -L "$bedFile" \
+    --countType COUNT_FRAGMENTS \
+    --minMappingQuality 20 \
+    --minBaseQuality 20 \
+    --omitIntervalStatistics \
+    --omitLocusTable \
+    -ct "$minimumCoverage" \
+    -dt NONE
+
+     #extract low depth bases
+     awk -v minimumCoverage="$minimumCoverage" '{ if(NR > 1 && $2 < minimumCoverage) {split($1,array,":"); print array[1]"\t"array[2]-1"\t"array[2]} }' "$seqId"_"$sampleId"_"$target" | \
+     /share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools merge > hotspot_coverage/"$seqId"_"$sampleId"_"$target"_gaps.bed
+
+     #calculate average coverage
+     avg=$(awk '{if (NR > 1) n+= $2} END {print n /(NR-1)}' "$seqId"_"$sampleId"_"$target")
+
+     #count bases above minimumCoverage
+     pctAboveThreshold=$(awk -v minimumCoverage="$minimumCoverage" '{if (NR > 1 && $2 >= minimumCoverage) n++} END {print (n /(NR-1)) * 100}' "$seqId"_"$sampleId"_"$target")
+
+     #write summary to file
+     echo -e "$target\t$SampleID\t$avg\t$pctAboveThreshold" >> "$seqId"_"$sampleId"_coverage_summary.txt
+
+     rm "$seqId"_"$sampleId"_"$target".sample_statistics
+     rm "$seqId"_"$sampleId"_"$target".sample_summary
+     rm "$seqId"_"$sampleId"_"$target"
+
+done
+
+#custom variant reporting
+mkdir hotspot_variants
+for bedFile in $(ls /data/diagnostics/pipelines/SomaticAmplicon/SomaticAmplicon-"$version"/"$panel"/hotspot_variants/*.bed); do
+
+    #extract target name
+    target=$(basename "$bedFile" | sed 's/\.bed//g')
+
+    #select variants
+    /share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx4g -jar /share/apps/GATK-distros/GATK_3.7.0/GenomeAnalysisTK.jar \
+    -T VariantFiltration \
+    -R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
+    -V "$seqId"_"$sampleId"_filtered_meta_annotated.vcf \
+    -L "$bedFile" \
+    -o hotspot_variants/"$seqId"_"$sampleId"_"$target"_filtered_meta_annotated.vcf \
+    -dt NONE
+
+    #write targeted dataset to table
+    #TODO
+
+done
+
 
 ### Clean up ###
 
