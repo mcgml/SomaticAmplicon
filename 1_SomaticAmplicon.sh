@@ -8,7 +8,7 @@ cd $PBS_O_WORKDIR
 #Description: Somatic Amplicon Pipeline (Illumina paired-end). Not for use with other library preps/ experimental conditions.
 #Author: Matt Lyon, All Wales Medical Genetics Lab
 #Mode: BY_SAMPLE
-version="1.2.2"
+version="1.2.3"
 
 # Directory structure required for pipeline
 #
@@ -134,7 +134,7 @@ VALIDATION_STRINGENCY=SILENT \
 TMP_DIR=/state/partition1/tmpdir | \
 /share/apps/bwa-distros/bwa-0.7.15/bwa mem \
 -M \
--t 10 \
+-t 12 \
 -p \
 /state/partition1/db/human/mappers/b37/bwa/human_g1k_v37.fasta \
 /dev/stdin | \
@@ -167,7 +167,7 @@ TMP_DIR=/state/partition1/tmpdir
 -T /data/diagnostics/pipelines/SomaticAmplicon/SomaticAmplicon-"$version"/"$panel"/"$panel"_ROI_b37.bed
 
 #sort and index BAM
-/share/apps/samtools-distros/samtools-1.3.1/samtools sort -m4G -o "$seqId"_"$sampleId"_amplicon_realigned_sorted.bam "$seqId"_"$sampleId"_amplicon_realigned.bam
+/share/apps/samtools-distros/samtools-1.3.1/samtools sort -@8 -m8G -o "$seqId"_"$sampleId"_amplicon_realigned_sorted.bam "$seqId"_"$sampleId"_amplicon_realigned.bam
 /share/apps/samtools-distros/samtools-1.3.1/samtools index "$seqId"_"$sampleId"_amplicon_realigned_sorted.bam
 
 #left align indels
@@ -193,7 +193,7 @@ TMP_DIR=/state/partition1/tmpdir
 -dt NONE
 
 #Realign around indels
-/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx12g -jar /share/apps/GATK-distros/GATK_3.7.0/GenomeAnalysisTK.jar \
+/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx24g -jar /share/apps/GATK-distros/GATK_3.7.0/GenomeAnalysisTK.jar \
 -T IndelRealigner \
 -R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 -known /state/partition1/db/human/gatk/2.8/b37/1000G_phase1.indels.b37.vcf \
@@ -203,7 +203,7 @@ TMP_DIR=/state/partition1/tmpdir
 --maxReadsForRealignment 500000 \
 --maxConsensuses 750 \
 --maxReadsForConsensuses 3000 \
---maxReadsInMemory 1250000 \
+--maxReadsInMemory 3750000 \
 -LOD 0.4 \
 -I "$seqId"_"$sampleId"_amplicon_realigned_left_sorted.bam \
 -o "$seqId"_"$sampleId"_indel_realigned.bam \
@@ -216,7 +216,7 @@ TMP_DIR=/state/partition1/tmpdir
 -T /data/diagnostics/pipelines/SomaticAmplicon/SomaticAmplicon-"$version"/"$panel"/"$panel"_ROI_b37.bed
 
 #sort and index BAM
-/share/apps/samtools-distros/samtools-1.3.1/samtools sort -m4G -o "$seqId"_"$sampleId"_clipped_sorted.bam "$seqId"_"$sampleId"_clipped.bam
+/share/apps/samtools-distros/samtools-1.3.1/samtools sort -@8 -m8G -o "$seqId"_"$sampleId"_clipped_sorted.bam "$seqId"_"$sampleId"_clipped.bam
 /share/apps/samtools-distros/samtools-1.3.1/samtools index "$seqId"_"$sampleId"_clipped_sorted.bam
 
 #fix bam tags
@@ -246,7 +246,7 @@ mono /share/apps/pisces-distros/5.1.6.54/Pisces.exe \
 -g /data/db/human/gatk/2.8/b37 \
 -i "$panel"_ROI_b37_thick.bed \
 -MinMQ 20 \
--t 8
+-t 12
 
 #fix VCF name
 echo "$sampleId" > name
@@ -424,6 +424,7 @@ for bedFile in $(ls /data/diagnostics/pipelines/SomaticAmplicon/SomaticAmplicon-
     --omitIntervalStatistics \
     --omitLocusTable \
     -ct "$minimumCoverage" \
+    -nt 12 \
     -dt NONE
 
      #extract low depth bases
@@ -465,7 +466,6 @@ for bedFile in $(ls /data/diagnostics/pipelines/SomaticAmplicon/SomaticAmplicon-
     #TODO
 
 done
-
 
 ### Clean up ###
 
