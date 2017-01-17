@@ -8,7 +8,7 @@ cd $PBS_O_WORKDIR
 #Description: Somatic Amplicon Pipeline (Illumina paired-end). Not for use with other library preps/ experimental conditions.
 #Author: Matt Lyon, All Wales Medical Genetics Lab
 #Mode: BY_SAMPLE
-version="1.2.3"
+version="1.2.4"
 
 # Directory structure required for pipeline
 #
@@ -25,10 +25,6 @@ version="1.2.3"
 #             └── sample3
 #
 # Script 1 runs in sample folder, requires fastq files split by lane
-
-#TODO calculate % coverage and gaps over targets
-#TODO validate with TruSight Myeloid, tumour 15 x 2, cosmic indels, wet lab runs x 3
-#TODO LOD with horizon controls (wet lab)
 
 phoneTrello() {
     #Call trello API
@@ -438,7 +434,7 @@ for bedFile in $(ls /data/diagnostics/pipelines/SomaticAmplicon/SomaticAmplicon-
      pctAboveThreshold=$(awk -v minimumCoverage="$minimumCoverage" '{if (NR > 1 && $2 >= minimumCoverage) n++} END {print (n /(NR-1)) * 100}' "$seqId"_"$sampleId"_"$target")
 
      #write summary to file
-     echo -e "$target\t$SampleID\t$avg\t$pctAboveThreshold" >> "$seqId"_"$sampleId"_coverage_summary.txt
+     echo -e "$target\t$sampleId\t$avg\t$pctAboveThreshold" >> "$seqId"_"$sampleId"_coverage_summary.txt
 
      rm "$seqId"_"$sampleId"_"$target".sample_statistics
      rm "$seqId"_"$sampleId"_"$target".sample_summary
