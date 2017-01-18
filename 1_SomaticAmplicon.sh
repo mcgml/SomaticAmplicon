@@ -287,8 +287,6 @@ rm name
 -V "$seqId"_"$sampleId"_lcr.vcf \
 --filterExpression "LCRLen > 8" \
 --filterName "LowComplexity" \
---filterExpression "MQ < 40.0" \
---filterName "MQ" \
 --filterExpression "DP < 50" \
 --filterName "LowDP" \
 -L "$panel"_ROI_b37_thick.bed \
