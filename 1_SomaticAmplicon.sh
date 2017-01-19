@@ -8,7 +8,7 @@ cd $PBS_O_WORKDIR
 #Description: Somatic Amplicon Pipeline (Illumina paired-end). Not for use with other library preps/ experimental conditions.
 #Author: Matt Lyon, All Wales Medical Genetics Lab
 #Mode: BY_SAMPLE
-version="1.2.5"
+version="1.2.6"
 
 # Directory structure required for pipeline
 #
@@ -387,6 +387,11 @@ perl /share/apps/vep-distros/ensembl-tools-release-86/scripts/variant_effect_pre
 --shift_hgvs 1 \
 --vcf \
 --refseq
+
+#check VEP has produced annotated VCF
+if [ ! -e "$seqId"_"$sampleId"_filtered_meta_annotated.vcf ]; then
+    cp "$seqId"_"$sampleId"_filtered_meta.vcf "$seqId"_"$sampleId"_filtered_meta_annotated.vcf
+fi
 
 #index & validate final VCF
 /share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx2g -jar /share/apps/GATK-distros/GATK_3.7.0/GenomeAnalysisTK.jar \
