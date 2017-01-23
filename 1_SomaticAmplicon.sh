@@ -26,12 +26,7 @@ version="1.2.6"
 #
 # Script 1 runs in sample folder, requires fastq files split by lane
 
-phoneTrello() {
-    #Call trello API
-    /share/apps/node-distros/node-v4.4.7-linux-x64/bin/node \
-    /data/diagnostics/scripts/TrelloAPI.js \
-    "$1" "$2" #seqId & message
-}
+#TODO phase alleles
 
 countQCFlagFails() {
     #count how many core FASTQC tests failed
@@ -45,8 +40,6 @@ countQCFlagFails() {
 #load sample & pipeline variables
 . *.variables
 . /data/diagnostics/pipelines/SomaticAmplicon/SomaticAmplicon-"$version"/"$panel"/"$panel".variables
-
-phoneTrello "$seqId" "Starting SomaticAmplicon analysis for $sampleId ..."
 
 ### Preprocessing ###
 
@@ -100,7 +93,6 @@ for fastqPair in $(ls "$sampleId"_S*.fastq.gz | cut -d_ -f1-3 | sort | uniq); do
 
     #check FASTQC output
     if [ $(countQCFlagFails "$seqId"_"$sampleId"_"$laneId"_R1_fastqc/summary.txt) -gt 0 ] || [ $(countQCFlagFails "$seqId"_"$sampleId"_"$laneId"_R2_fastqc/summary.txt) -gt 0 ]; then
-        phoneTrello "$seqId" "$sampleId has failed FASTQC for $laneId"
         rawSequenceQuality=FAIL
     fi
 
@@ -478,6 +470,3 @@ rm "$seqId"_"$sampleId"_filtered.vcf.idx "$seqId"_"$sampleId"_fixed.vcf "$seqId"
 rm "$seqId"_"$sampleId"_*_fastqc.zip "$seqId"_"$sampleId"_lcr.vcf "$seqId"_"$sampleId"_lcr.vcf.idx "$seqId"_"$sampleId".vcf "$seqId"_"$sampleId"_left_aligned_annotated.vcf 
 rm "$seqId"_"$sampleId"_left_aligned_annotated.vcf.idx
 rm -r PiscesLogs
-
-#log with Trello
-phoneTrello "$seqId" "Analysis complete"
