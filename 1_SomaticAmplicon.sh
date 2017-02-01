@@ -8,7 +8,7 @@ cd $PBS_O_WORKDIR
 #Description: Somatic Amplicon Pipeline (Illumina paired-end). Not for use with other library preps/ experimental conditions.
 #Author: Matt Lyon, All Wales Medical Genetics Lab
 #Mode: BY_SAMPLE
-version="1.3.3"
+version="1.3.4"
 
 # Directory structure required for pipeline
 #
@@ -394,7 +394,7 @@ fi
 
 #custom coverage reporting
 mkdir hotspot_coverage
-echo "Target\tSampleId\tAverage\tPercentageAbove$threshold" > hotspot_coverage/"$seqId"_"$sampleId"_coverage_summary.txt
+echo "Target\tSampleId\tAverage\tPercentageAbove$minimumCoverage" > hotspot_coverage/"$seqId"_"$sampleId"_coverage_summary.txt
 for bedFile in $(ls /data/diagnostics/pipelines/SomaticAmplicon/SomaticAmplicon-"$version"/"$panel"/hotspot_coverage/*.bed); do
 
     #extract target name
