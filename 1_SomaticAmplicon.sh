@@ -8,7 +8,7 @@ cd $PBS_O_WORKDIR
 #Description: Somatic Amplicon Pipeline (Illumina paired-end). Not for use with other library preps/ experimental conditions.
 #Author: Matt Lyon, All Wales Medical Genetics Lab
 #Mode: BY_SAMPLE
-version="1.2.6"
+version="1.3.0"
 
 # Directory structure required for pipeline
 #
@@ -25,8 +25,6 @@ version="1.2.6"
 #             └── sample3
 #
 # Script 1 runs in sample folder, requires fastq files split by lane
-
-#TODO phase alleles
 
 countQCFlagFails() {
     #count how many core FASTQC tests failed
@@ -72,7 +70,7 @@ for fastqPair in $(ls "$sampleId"_S*.fastq.gz | cut -d_ -f1-3 | sort | uniq); do
     -j 12
 
     #convert fastq to ubam
-    /share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx8g -jar /share/apps/picard-tools-distros/picard-tools-2.8.1/picard.jar FastqToSam \
+    /share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx8g -jar /share/apps/picard-tools-distros/picard-tools-2.8.2/picard.jar FastqToSam \
     F1="$seqId"_"$sampleId"_"$laneId"_merged.fastq.assembled.fastq \
     O="$seqId"_"$sampleId"_"$laneId"_unaligned.bam \
     QUALITY_FORMAT=Standard \
@@ -102,7 +100,7 @@ for fastqPair in $(ls "$sampleId"_S*.fastq.gz | cut -d_ -f1-3 | sort | uniq); do
 done
 
 #merge lane bams
-/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx8g -jar /share/apps/picard-tools-distros/picard-tools-2.8.1/picard.jar MergeSamFiles \
+/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx8g -jar /share/apps/picard-tools-distros/picard-tools-2.8.2/picard.jar MergeSamFiles \
 $(ls "$seqId"_"$sampleId"_*_unaligned.bam | sed 's/^/I=/' | tr '\n' ' ') \
 SORT_ORDER=queryname \
 ASSUME_SORTED=true \
@@ -113,7 +111,7 @@ TMP_DIR=/state/partition1/tmpdir \
 O="$seqId"_"$sampleId"_unaligned.bam
 
 #uBam2fq, map & MergeBamAlignment
-/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx8g -jar /share/apps/picard-tools-distros/picard-tools-2.8.1/picard.jar SamToFastq \
+/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx8g -jar /share/apps/picard-tools-distros/picard-tools-2.8.2/picard.jar SamToFastq \
 I="$seqId"_"$sampleId"_unaligned.bam \
 FASTQ=/dev/stdout \
 NON_PF=true \
@@ -126,7 +124,7 @@ TMP_DIR=/state/partition1/tmpdir | \
 -p \
 /state/partition1/db/human/mappers/b37/bwa/human_g1k_v37.fasta \
 /dev/stdin | \
-/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx8g -jar /share/apps/picard-tools-distros/picard-tools-2.8.1/picard.jar MergeBamAlignment \
+/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx8g -jar /share/apps/picard-tools-distros/picard-tools-2.8.2/picard.jar MergeBamAlignment \
 ATTRIBUTES_TO_RETAIN=X0 \
 ALIGNED_BAM=/dev/stdin \
 UNMAPPED_BAM="$seqId"_"$sampleId"_unaligned.bam \
@@ -208,7 +206,7 @@ TMP_DIR=/state/partition1/tmpdir
 /share/apps/samtools-distros/samtools-1.3.1/samtools index "$seqId"_"$sampleId"_clipped_sorted.bam
 
 #fix bam tags
-/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx8g -jar /share/apps/picard-tools-distros/picard-tools-2.8.1/picard.jar SetNmMdAndUqTags \
+/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx8g -jar /share/apps/picard-tools-distros/picard-tools-2.8.2/picard.jar SetNmMdAndUqTags \
 I="$seqId"_"$sampleId"_clipped_sorted.bam \
 O="$seqId"_"$sampleId".bam \
 CREATE_INDEX=true \
@@ -234,6 +232,7 @@ mono /share/apps/pisces-distros/5.1.6.54/Pisces.exe \
 -g /data/db/human/gatk/2.8/b37 \
 -i "$panel"_ROI_b37_thick.bed \
 -MinMQ 20 \
+-CallMNVs true \
 -t 12
 
 #fix VCF name
@@ -288,13 +287,13 @@ rm name
 ### QC ###
 
 #Convert BED to interval_list for later
-/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx8g -jar /share/apps/picard-tools-distros/picard-tools-2.8.1/picard.jar BedToIntervalList \
+/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx8g -jar /share/apps/picard-tools-distros/picard-tools-2.8.2/picard.jar BedToIntervalList \
 I="$panel"_ROI_b37_thick.bed \
 O="$panel"_ROI.interval_list \
 SD=/state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.dict
 
 #HsMetrics: capture & pooling performance
-/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx8g -jar /share/apps/picard-tools-distros/picard-tools-2.8.1/picard.jar CollectHsMetrics \
+/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx8g -jar /share/apps/picard-tools-distros/picard-tools-2.8.2/picard.jar CollectHsMetrics \
 I="$seqId"_"$sampleId".bam \
 O="$seqId"_"$sampleId"_hs_metrics.txt \
 R=/state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
@@ -333,12 +332,12 @@ meanOnTargetCoverage=$(head -n2 $seqId"_"$sampleId"_DepthOfCoverage".sample_summ
 pctTargetBasesCt=$(head -n2 $seqId"_"$sampleId"_DepthOfCoverage".sample_summary | tail -n1 | cut -s -f7) #percentage panel covered with good enough data for variant detection
 
 #Print QC metrics
-echo -e "TotalReads\tRawSequenceQuality\tTotalTargetUsableBases\tPctSelectedBases\tpctTargetBasesCt\tMeanOnTargetCoverage" > "$seqId"_"$sampleId"_qc.txt
+echo -e "TotalReads\tRawSequenceQuality\tTotalTargetUsableBases\tPctSelectedBases\tPctTargetBasesCt\tMeanOnTargetCoverage" > "$seqId"_"$sampleId"_qc.txt
 echo -e "$totalReads\t$rawSequenceQuality\t$totalTargetedUsableBases\t$pctSelectedBases\t$pctTargetBasesCt\t$meanOnTargetCoverage" >> "$seqId"_"$sampleId"_qc.txt
 
 #Add VCF meta data to final VCF
 grep '^##' "$seqId"_"$sampleId"_filtered.vcf > "$seqId"_"$sampleId"_filtered_meta.vcf
-echo \#\#SAMPLE\=\<ID\="$sampleId",WorklistId\="$worklistId",SeqId\="$seqId",Panel\="$panel",PipelineName\=SomaticAmplicon,PipelineVersion\="$version",RawSequenceQuality\="$rawSequenceQuality",TotalReads\="$totalReads",PctSelectedBases\="$pctSelectedBases",MeanOnTargetCoverage\="$meanOnTargetCoverage",pctTargetBasesCt\="$pctTargetBasesCt",TotalTargetedUsableBases\="$totalTargetedUsableBases",RemoteBamFilePath\=$(find $PWD -type f -name "$seqId"_"$sampleId".bam)\> >> "$seqId"_"$sampleId"_filtered_meta.vcf
+echo \#\#SAMPLE\=\<ID\="$sampleId",Tissue\=Somatic,WorklistId\="$worklistId",SeqId\="$seqId",Assay\="$panel",PipelineName\=SomaticAmplicon,PipelineVersion\="$version",RawSequenceQuality\="$rawSequenceQuality",TotalReads\="$totalReads",PctSelectedBases\="$pctSelectedBases",MeanOnTargetCoverage\="$meanOnTargetCoverage",PctTargetBasesCt\="$pctTargetBasesCt",TotalTargetedUsableBases\="$totalTargetedUsableBases",RemoteVcfFilePath\=$(find $PWD -type f -name "$seqId"_"$sampleId"_filtered_meta.vcf),RemoteBamFilePath\=$(find $PWD -type f -name "$seqId"_"$sampleId".bam)\> >> "$seqId"_"$sampleId"_filtered_meta.vcf
 grep -v '^##' "$seqId"_"$sampleId"_filtered.vcf >> "$seqId"_"$sampleId"_filtered_meta.vcf
 
 #Variant Evaluation
@@ -372,6 +371,7 @@ perl /share/apps/vep-distros/ensembl-tools-release-86/scripts/variant_effect_pre
 --cache \
 --dir /share/apps/vep-distros/ensembl-tools-release-86/scripts/variant_effect_predictor/annotations \
 --fasta /share/apps/vep-distros/ensembl-tools-release-86/scripts/variant_effect_predictor/annotations \
+--no_intergenic \
 --offline \
 --cache_version 86 \
 --allele_number \
@@ -391,9 +391,6 @@ fi
 -R /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 -V "$seqId"_"$sampleId"_filtered_meta_annotated.vcf \
 -dt NONE
-
-#write full dataset to table
-#TODO
 
 #custom coverage reporting
 mkdir hotspot_coverage
@@ -454,9 +451,23 @@ for bedFile in $(ls /data/diagnostics/pipelines/SomaticAmplicon/SomaticAmplicon-
     -dt NONE
 
     #write targeted dataset to table
-    #TODO
+    java -jar /data/diagnostics/apps/VCFParse/VCFParse-1.0.0/VCFParse.jar \
+    -V hotspot_variants/"$seqId"_"$sampleId"_"$target"_filtered_meta_annotated.vcf \
+    -T /data/diagnostics/pipelines/SomaticAmplicon/SomaticAmplicon-"$version"/"$panel"/"$panel"_PreferredTranscripts.txt \
+    -C /data/diagnostics/pipelines/SomaticAmplicon/SomaticAmplicon-"$version"/"$panel"/"$panel"_KnownVariants.vcf \
+    -K
+
+    #move to hotspot_variants
+    mv "$sampleId"_VariantReport.txt hotspot_variants/"$sampleId"_"$target"_VariantReport.txt
 
 done
+
+#write full dataset to table
+java -jar /data/diagnostics/apps/VCFParse/VCFParse-1.0.0/VCFParse.jar \
+-V "$seqId"_"$sampleId"_filtered_meta_annotated.vcf \
+-T /data/diagnostics/pipelines/SomaticAmplicon/SomaticAmplicon-"$version"/"$panel"/"$panel"_PreferredTranscripts.txt \
+-C /data/diagnostics/pipelines/SomaticAmplicon/SomaticAmplicon-"$version"/"$panel"/"$panel"_KnownVariants.vcf \
+-K
 
 ### Clean up ###
 
