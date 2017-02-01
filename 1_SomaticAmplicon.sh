@@ -8,7 +8,7 @@ cd $PBS_O_WORKDIR
 #Description: Somatic Amplicon Pipeline (Illumina paired-end). Not for use with other library preps/ experimental conditions.
 #Author: Matt Lyon, All Wales Medical Genetics Lab
 #Mode: BY_SAMPLE
-version="1.3.0"
+version="1.3.1"
 
 # Directory structure required for pipeline
 #
@@ -459,7 +459,7 @@ for bedFile in $(ls /data/diagnostics/pipelines/SomaticAmplicon/SomaticAmplicon-
     -K
 
     #move to hotspot_variants
-    mv "$sampleId"_VariantReport.txt hotspot_variants/"$sampleId"_"$target"_VariantReport.txt
+    mv "$seqId"_"$sampleId"_VariantReport.txt hotspot_variants/"$seqId"_"$sampleId"_"$target"_VariantReport.txt
 
 done
 
