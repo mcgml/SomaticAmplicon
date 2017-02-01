@@ -394,6 +394,7 @@ fi
 
 #custom coverage reporting
 mkdir hotspot_coverage
+echo "Target\tSampleId\tAverage\tPercentageAbove$threshold" > hotspot_coverage/"$seqId"_"$sampleId"_coverage_summary.txt
 for bedFile in $(ls /data/diagnostics/pipelines/SomaticAmplicon/SomaticAmplicon-"$version"/"$panel"/hotspot_coverage/*.bed); do
 
     #extract target name
@@ -426,7 +427,7 @@ for bedFile in $(ls /data/diagnostics/pipelines/SomaticAmplicon/SomaticAmplicon-
      pctAboveThreshold=$(awk -v minimumCoverage="$minimumCoverage" '{if (NR > 1 && $2 >= minimumCoverage) n++} END {print (n /(NR-1)) * 100}' "$seqId"_"$sampleId"_"$target")
 
      #write summary to file
-     echo -e "$target\t$sampleId\t$avg\t$pctAboveThreshold" >> "$seqId"_"$sampleId"_coverage_summary.txt
+     echo -e "$target\t$sampleId\t$avg\t$pctAboveThreshold" >> hotspot_coverage/"$seqId"_"$sampleId"_coverage_summary.txt
 
      rm "$seqId"_"$sampleId"_"$target".sample_statistics
      rm "$seqId"_"$sampleId"_"$target".sample_summary
