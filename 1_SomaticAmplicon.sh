@@ -8,7 +8,7 @@ cd $PBS_O_WORKDIR
 #Description: Somatic Amplicon Pipeline (Illumina paired-end). Not for use with other library preps/ experimental conditions.
 #Author: Matt Lyon, All Wales Medical Genetics Lab
 #Mode: BY_SAMPLE
-version="1.3.4"
+version="1.3.5"
 
 # Directory structure required for pipeline
 #
@@ -393,78 +393,84 @@ fi
 -dt NONE
 
 #custom coverage reporting
-mkdir hotspot_coverage
-echo "Target\tSampleId\tAverage\tPercentageAbove$minimumCoverage" > hotspot_coverage/"$seqId"_"$sampleId"_coverage_summary.txt
-for bedFile in $(ls /data/diagnostics/pipelines/SomaticAmplicon/SomaticAmplicon-"$version"/"$panel"/hotspot_coverage/*.bed); do
+if [ -d /data/diagnostics/pipelines/SomaticAmplicon/SomaticAmplicon-"$version"/"$panel"/hotspot_coverage ]; then
+    mkdir hotspot_coverage
+    echo "Target\tSampleId\tAverage\tPercentageAbove$minimumCoverage" > hotspot_coverage/"$seqId"_"$sampleId"_coverage_summary.txt
 
-    #extract target name
-    target=$(basename "$bedFile" | sed 's/\.bed//g')
+    for bedFile in $(ls /data/diagnostics/pipelines/SomaticAmplicon/SomaticAmplicon-"$version"/"$panel"/hotspot_coverage/*.bed); do
 
-    #generate per-base coverage
-    /share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx12g -jar /share/apps/GATK-distros/GATK_3.7.0/GenomeAnalysisTK.jar \
-    -T DepthOfCoverage \
-    -R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
-    -o "$seqId"_"$sampleId"_"$target" \
-    -I "$seqId"_"$sampleId".bam \
-    -L "$bedFile" \
-    --countType COUNT_FRAGMENTS \
-    --minMappingQuality 20 \
-    --minBaseQuality 20 \
-    --omitIntervalStatistics \
-    --omitLocusTable \
-    -ct "$minimumCoverage" \
-    -nt 12 \
-    -dt NONE
+        #extract target name
+        target=$(basename "$bedFile" | sed 's/\.bed//g')
 
-     #extract low depth bases
-     awk -v minimumCoverage="$minimumCoverage" '{ if(NR > 1 && $2 < minimumCoverage) {split($1,array,":"); print array[1]"\t"array[2]-1"\t"array[2]} }' "$seqId"_"$sampleId"_"$target" | \
-     /share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools merge > hotspot_coverage/"$seqId"_"$sampleId"_"$target"_gaps.bed
+        #generate per-base coverage
+        /share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx12g -jar /share/apps/GATK-distros/GATK_3.7.0/GenomeAnalysisTK.jar \
+        -T DepthOfCoverage \
+        -R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
+        -o "$seqId"_"$sampleId"_"$target" \
+        -I "$seqId"_"$sampleId".bam \
+        -L "$bedFile" \
+        --countType COUNT_FRAGMENTS \
+        --minMappingQuality 20 \
+        --minBaseQuality 20 \
+        --omitIntervalStatistics \
+        --omitLocusTable \
+        -ct "$minimumCoverage" \
+        -nt 12 \
+        -dt NONE
 
-     #calculate average coverage
-     avg=$(awk '{if (NR > 1) n+= $2} END {print n /(NR-1)}' "$seqId"_"$sampleId"_"$target")
+        #extract low depth bases
+        awk -v minimumCoverage="$minimumCoverage" '{ if(NR > 1 && $2 < minimumCoverage) {split($1,array,":"); print array[1]"\t"array[2]-1"\t"array[2]} }' "$seqId"_"$sampleId"_"$target" | \
+        /share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools merge > hotspot_coverage/"$seqId"_"$sampleId"_"$target"_gaps.bed
 
-     #count bases above minimumCoverage
-     pctAboveThreshold=$(awk -v minimumCoverage="$minimumCoverage" '{if (NR > 1 && $2 >= minimumCoverage) n++} END {print (n /(NR-1)) * 100}' "$seqId"_"$sampleId"_"$target")
+        #calculate average coverage
+        avg=$(awk '{if (NR > 1) n+= $2} END {print n /(NR-1)}' "$seqId"_"$sampleId"_"$target")
 
-     #write summary to file
-     echo -e "$target\t$sampleId\t$avg\t$pctAboveThreshold" >> hotspot_coverage/"$seqId"_"$sampleId"_coverage_summary.txt
+        #count bases above minimumCoverage
+        pctAboveThreshold=$(awk -v minimumCoverage="$minimumCoverage" '{if (NR > 1 && $2 >= minimumCoverage) n++} END {print (n /(NR-1)) * 100}' "$seqId"_"$sampleId"_"$target")
 
-     rm "$seqId"_"$sampleId"_"$target".sample_statistics
-     rm "$seqId"_"$sampleId"_"$target".sample_summary
-     rm "$seqId"_"$sampleId"_"$target"
+        #write summary to file
+        echo -e "$target\t$sampleId\t$avg\t$pctAboveThreshold" >> hotspot_coverage/"$seqId"_"$sampleId"_coverage_summary.txt
 
-done
+        rm "$seqId"_"$sampleId"_"$target".sample_statistics
+        rm "$seqId"_"$sampleId"_"$target".sample_summary
+        rm "$seqId"_"$sampleId"_"$target"
+
+    done
+fi
 
 #custom variant reporting
-mkdir hotspot_variants
-for bedFile in $(ls /data/diagnostics/pipelines/SomaticAmplicon/SomaticAmplicon-"$version"/"$panel"/hotspot_variants/*.bed); do
+if [ -d /data/diagnostics/pipelines/SomaticAmplicon/SomaticAmplicon-"$version"/"$panel"/hotspot_variants ]; then
+    mkdir hotspot_variants
 
-    #extract target name
-    target=$(basename "$bedFile" | sed 's/\.bed//g')
+    for bedFile in $(ls /data/diagnostics/pipelines/SomaticAmplicon/SomaticAmplicon-"$version"/"$panel"/hotspot_variants/*.bed); do
 
-    #select variants
-    /share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx4g -jar /share/apps/GATK-distros/GATK_3.7.0/GenomeAnalysisTK.jar \
-    -T VariantFiltration \
-    -R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
-    -V "$seqId"_"$sampleId"_filtered_meta_annotated.vcf \
-    -L "$bedFile" \
-    -o hotspot_variants/"$seqId"_"$sampleId"_"$target"_filtered_meta_annotated.vcf \
-    -dt NONE
+        #extract target name
+        target=$(basename "$bedFile" | sed 's/\.bed//g')
 
-    #write targeted dataset to table
-    java -jar /data/diagnostics/apps/VCFParse/VCFParse-1.0.0/VCFParse.jar \
-    -V hotspot_variants/"$seqId"_"$sampleId"_"$target"_filtered_meta_annotated.vcf \
-    -T /data/diagnostics/pipelines/SomaticAmplicon/SomaticAmplicon-"$version"/"$panel"/"$panel"_PreferredTranscripts.txt \
-    -C /data/diagnostics/pipelines/SomaticAmplicon/SomaticAmplicon-"$version"/"$panel"/"$panel"_KnownVariants.vcf \
-    -K
+        #select variants
+        /share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx4g -jar /share/apps/GATK-distros/GATK_3.7.0/GenomeAnalysisTK.jar \
+        -T VariantFiltration \
+        -R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
+        -V "$seqId"_"$sampleId"_filtered_meta_annotated.vcf \
+        -L "$bedFile" \
+        -o hotspot_variants/"$seqId"_"$sampleId"_"$target"_filtered_meta_annotated.vcf \
+        -dt NONE
 
-    #move to hotspot_variants
-    mv "$seqId"_"$sampleId"_VariantReport.txt hotspot_variants/"$seqId"_"$sampleId"_"$target"_VariantReport.txt
+        #write targeted dataset to table
+        /share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -jar /data/diagnostics/apps/VCFParse/VCFParse-1.0.0/VCFParse.jar \
+        -V hotspot_variants/"$seqId"_"$sampleId"_"$target"_filtered_meta_annotated.vcf \
+        -T /data/diagnostics/pipelines/SomaticAmplicon/SomaticAmplicon-"$version"/"$panel"/"$panel"_PreferredTranscripts.txt \
+        -C /data/diagnostics/pipelines/SomaticAmplicon/SomaticAmplicon-"$version"/"$panel"/"$panel"_KnownVariants.vcf \
+        -K
 
-done
+        #move to hotspot_variants
+        mv "$seqId"_"$sampleId"_VariantReport.txt hotspot_variants/"$seqId"_"$sampleId"_"$target"_VariantReport.txt
+
+    done
+fi
 
 #write full dataset to table
-java -jar /data/diagnostics/apps/VCFParse/VCFParse-1.0.0/VCFParse.jar \
+/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -jar /data/diagnostics/apps/VCFParse/VCFParse-1.0.0/VCFParse.jar \
 -V "$seqId"_"$sampleId"_filtered_meta_annotated.vcf \
 -T /data/diagnostics/pipelines/SomaticAmplicon/SomaticAmplicon-"$version"/"$panel"/"$panel"_PreferredTranscripts.txt \
 -C /data/diagnostics/pipelines/SomaticAmplicon/SomaticAmplicon-"$version"/"$panel"/"$panel"_KnownVariants.vcf \
