@@ -8,7 +8,7 @@ cd $PBS_O_WORKDIR
 #Description: Somatic Amplicon Pipeline (Illumina paired-end). Not for use with other library preps/ experimental conditions.
 #Author: Matt Lyon, All Wales Medical Genetics Lab
 #Mode: BY_SAMPLE
-version="1.3.5"
+version="1.3.6"
 
 # Directory structure required for pipeline
 #
@@ -232,7 +232,6 @@ mono /share/apps/pisces-distros/5.1.6.54/Pisces.exe \
 -g /data/db/human/gatk/2.8/b37 \
 -i "$panel"_ROI_b37_thick.bed \
 -MinMQ 20 \
--CallMNVs true \
 -t 12
 
 #fix VCF name
