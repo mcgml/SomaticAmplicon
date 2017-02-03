@@ -8,7 +8,7 @@ cd $PBS_O_WORKDIR
 #Description: Somatic Amplicon Pipeline (Illumina paired-end). Not for use with other library preps/ experimental conditions.
 #Author: Matt Lyon, All Wales Medical Genetics Lab
 #Mode: BY_SAMPLE
-version="1.4.0"
+version="1.4.1"
 
 # Directory structure required for pipeline
 #
@@ -233,7 +233,7 @@ mono /share/apps/MiSeqReporter-distros/MiSeqReporter-2.6.3/CallSomaticVariants.e
 -fo False \
 -b 20 \
 -q 100 \
--c 20 \
+-c 50 \
 -s 0.5 \
 -a 20 \
 -F 30 \
