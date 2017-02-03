@@ -8,7 +8,7 @@ cd $PBS_O_WORKDIR
 #Description: Somatic Amplicon Pipeline (Illumina paired-end). Not for use with other library preps/ experimental conditions.
 #Author: Matt Lyon, All Wales Medical Genetics Lab
 #Mode: BY_SAMPLE
-version="1.3.6"
+version="1.4.0"
 
 # Directory structure required for pipeline
 #
@@ -225,21 +225,30 @@ awk '{print $1"\t"$7"\t"$8}' /data/diagnostics/pipelines/SomaticAmplicon/Somatic
 #load mono
 . /opt/mono/env.sh
 
-#SNPs and Indels with Illumina Pisces
-mono /share/apps/pisces-distros/5.1.6.54/Pisces.exe \
+#Call somatic variants
+mono /share/apps/MiSeqReporter-distros/MiSeqReporter-2.6.3/CallSomaticVariants.exe \
 -B ./"$seqId"_"$sampleId".bam \
--MinimumFrequency 0.01 \
 -g /data/db/human/gatk/2.8/b37 \
--i "$panel"_ROI_b37_thick.bed \
--MinMQ 20 \
--t 12
+-f 0.01 \
+-fo False \
+-b 20 \
+-q 100 \
+-c 20 \
+-s 0.5 \
+-a 20 \
+-F 30 \
+-gVCF False \
+-i false \
+-PhaseSNPs true \
+-MaxPhaseSNPLength 100 \
+-r .
 
 #fix VCF name
 echo "$sampleId" > name
 /share/apps/bcftools-distros/bcftools-1.2/bcftools reheader \
 -s name \
 -o "$seqId"_"$sampleId"_fixed.vcf \
-"$seqId"_"$sampleId".vcf
+$(echo "$seqId"_"$sampleId" | sed 's/_/-/g')_S999.vcf
 rm name
 
 #left align and trim variants
@@ -484,6 +493,6 @@ rm "$seqId"_"$sampleId"_clipped.bam "$seqId"_"$sampleId"_clipped_sorted.bam "$se
 rm "$seqId"_"$sampleId"_left_aligned.vcf "$seqId"_"$sampleId"_left_aligned.vcf.idx "$seqId"_"$sampleId".bam.bai "$seqId"_"$sampleId"_amplicon_realigned_left_sorted.bam
 rm "$seqId"_"$sampleId"_amplicon_realigned_left_sorted.bai "$seqId"_"$sampleId"_filtered_meta.vcf "$seqId"_"$sampleId"_filtered_meta.vcf.idx "$seqId"_"$sampleId"_filtered.vcf
 rm "$seqId"_"$sampleId"_filtered.vcf.idx "$seqId"_"$sampleId"_fixed.vcf "$seqId"_"$sampleId"_fixed.vcf.idx "$seqId"_"$sampleId"_indel_realigned.bam "$seqId"_"$sampleId"_indel_realigned.bai
-rm "$seqId"_"$sampleId"_*_fastqc.zip "$seqId"_"$sampleId"_lcr.vcf "$seqId"_"$sampleId"_lcr.vcf.idx "$seqId"_"$sampleId".vcf "$seqId"_"$sampleId"_left_aligned_annotated.vcf 
-rm "$seqId"_"$sampleId"_left_aligned_annotated.vcf.idx
-rm -r PiscesLogs
+rm "$seqId"_"$sampleId"_*_fastqc.zip "$seqId"_"$sampleId"_lcr.vcf "$seqId"_"$sampleId"_lcr.vcf.idx "$seqId"_"$sampleId"_left_aligned_annotated.vcf "$seqId"_"$sampleId"_left_aligned_annotated.vcf.idx
+rm $(echo "$seqId"_"$sampleId" | sed 's/_/-/g')_S999.vcf
+rm -r VariantCallingLogs
