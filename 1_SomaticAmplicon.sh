@@ -403,7 +403,7 @@ fi
 #custom coverage reporting
 if [ -d /data/diagnostics/pipelines/SomaticAmplicon/SomaticAmplicon-"$version"/"$panel"/hotspot_coverage ]; then
     mkdir hotspot_coverage
-    echo "Target\tSampleId\tAverage\tPercentageAbove$minimumCoverage" > hotspot_coverage/"$seqId"_"$sampleId"_coverage_summary.txt
+    echo -e "Target\tSampleId\tAverage\tPercentageAbove$minimumCoverage" > hotspot_coverage/"$seqId"_"$sampleId"_coverage_summary.txt
 
     for bedFile in $(ls /data/diagnostics/pipelines/SomaticAmplicon/SomaticAmplicon-"$version"/"$panel"/hotspot_coverage/*.bed); do
 
