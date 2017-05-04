@@ -1,0 +1,38 @@
+##fileformat=VCFv4.1
+##INFO=<ID=Classification,Number=1,Type=Integer,Description="Variant pathogenicity classification, 0=Artefact, 1=Clearly not pathogenic, 2=Unlikely to be pathogenic, 3=Unknown significance, 4=Likely to be pathogenic, 5=Clearly pathogenic">
+##INFO=<ID=Submitter,Number=1,Type=String,Description="Submitter name">
+##INFO=<ID=Authoriser,Number=1,Type=String,Description="Authoriser name">
+##INFO=<ID=Evidence,Number=1,Type=String,Description="Classification evidence">
+##INFO=<ID=DateAdded,Number=1,Type=String,Description="Date added">
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO
+1	162737116	.	C	G	.	.	Classification=1;Submitter=Michelle;Authoriser=Michelle;Evidence=None;DateAdded=15/06/2015
+2	209113192	.	G	A	.	.	Classification=1;Submitter=Michelle;Authoriser=Michelle;Evidence=None;DateAdded=15/06/2015
+3	178937025	.	T	C	.	.	Classification=0;Submitter=Michelle;Authoriser=Michelle;Evidence=None;DateAdded=15/06/2016
+3	178943762	.	A	G	.	.	Classification=0;Submitter=Michelle;Authoriser=Michelle;Evidence=None;DateAdded=15/06/2016
+4	1803704	.	T	C	.	.	Classification=1;Submitter=Michelle;Authoriser=Michelle;Evidence=None;DateAdded=15/06/2015
+4	1807894	.	G	A	.	.	Classification=1;Submitter=Michelle;Authoriser=Michelle;Evidence=None;DateAdded=15/06/2015
+4	55141055	.	A	G	.	.	Classification=1;Submitter=Michelle;Authoriser=Michelle;Evidence=None;DateAdded=15/06/2015
+4	55141111	.	G	T	.	.	Classification=0;Submitter=Michelle;Authoriser=Michelle;Evidence=None;DateAdded=15/06/2016
+4	55141120	.	C	CT	.	.	Classification=0;Submitter=Michelle;Authoriser=Michelle;Evidence=None;DateAdded=15/06/2016
+4	55152040	.	C	T	.	.	Classification=1;Submitter=Michelle;Authoriser=Michelle;Evidence=None;DateAdded=15/06/2015
+4	55599306	.	T	C	.	.	Classification=0;Submitter=Michelle;Authoriser=Michelle;Evidence=None;DateAdded=15/06/2016
+7	55249063	.	G	A	.	.	Classification=1;Submitter=Michelle;Authoriser=Michelle;Evidence=None;DateAdded=15/06/2015
+7	55266417	.	T	C	.	.	Classification=1;Submitter=Michelle;Authoriser=Michelle;Evidence=None;DateAdded=15/06/2015
+7	55266525	.	T	C	.	.	Classification=0;Submitter=Michelle;Authoriser=Michelle;Evidence=None;DateAdded=15/06/2016
+7	55266531	.	C	T	.	.	Classification=0;Submitter=Michelle;Authoriser=Michelle;Evidence=None;DateAdded=15/06/2016
+7	116422040	.	A	C	.	.	Classification=0;Submitter=Michelle;Authoriser=Michelle;Evidence=None;DateAdded=15/06/2016
+7	116423400	.	T	A	.	.	Classification=0;Submitter=Michelle;Authoriser=Michelle;Evidence=None;DateAdded=15/06/2016
+10	43613843	.	G	T	.	.	Classification=1;Submitter=Michelle;Authoriser=Michelle;Evidence=None;DateAdded=15/06/2015
+10	89720633	.	C	CT	.	.	Classification=0;Submitter=Rhi;Authoriser=Michelle;Evidence=None;DateAdded=24/04/2015
+10	89720633	.	C	CTT	.	.	Classification=0;Submitter=Rhi;Authoriser=Michelle;Evidence=None;DateAdded=24/04/2015
+10	89720633	.	CT	C	.	.	Classification=0;Submitter=Rhi;Authoriser=Michelle;Evidence=None;DateAdded=24/04/2015
+10	89720633	.	CTT	C	.	.	Classification=0;Submitter=Rhi;Authoriser=Michelle;Evidence=None;DateAdded=24/04/2015
+10	89720633	.	C	T	.	.	Classification=0;Submitter=Rhi;Authoriser=Michelle;Evidence=None;DateAdded=24/04/2015
+17	7576841	.	A	G	.	.	Classification=1;Submitter=Michelle;Authoriser=Michelle;Evidence=None;DateAdded=03/12/2015
+17	7578210	.	T	C	.	.	Classification=1;Submitter=Michelle;Authoriser=Michelle;Evidence=None;DateAdded=03/12/2015
+17	7579472	.	G	C	.	.	Classification=1;Submitter=Rhi;Authoriser=Michelle;Evidence=None;DateAdded=24/04/2015
+17	7579579	.	C	T	.	.	Classification=1;Submitter=Michelle;Authoriser=Michelle;Evidence=None;DateAdded=03/12/2015
+17	37865659	.	C	T	.	.	Classification=1;Submitter=Michelle;Authoriser=Michelle;Evidence=None;DateAdded=15/06/2015
+17	37879588	.	A	G	.	.	Classification=1;Submitter=Michelle;Authoriser=Michelle;Evidence=None;DateAdded=15/06/2015
+17	37881082	.	G	A	.	.	Classification=0;Submitter=Michelle;Authoriser=Michelle;Evidence=None;DateAdded=15/06/2016
+17	37884037	.	C	G	.	.	Classification=1;Submitter=Michelle;Authoriser=Michelle;Evidence=None;DateAdded=15/06/2015
