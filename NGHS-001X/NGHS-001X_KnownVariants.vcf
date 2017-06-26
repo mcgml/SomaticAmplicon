@@ -1,0 +1,7 @@
+##fileformat=VCFv4.1
+##INFO=<ID=Classification,Number=1,Type=Integer,Description="Variant pathogenicity classification, 0=Artefact, 1=Clearly not pathogenic, 2=Unlikely to be pathogenic, 3=Unknown significance, 4=Likely to be pathogenic, 5=Clearly pathogenic">
+##INFO=<ID=Submitter,Number=1,Type=String,Description="Submitter name">
+##INFO=<ID=Authoriser,Number=1,Type=String,Description="Authoriser name">
+##INFO=<ID=Evidence,Number=1,Type=String,Description="Classification evidence">
+##INFO=<ID=DateAdded,Number=1,Type=String,Description="Date added">
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO
